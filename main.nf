@@ -40,13 +40,13 @@ def helpMessage() {
 
 // MODULES --------------------------------------------------------------------
 
-include { MODULE_NAME } from './modules/module_name.nf'
+include { WORKFLOW } from './workflows/workflow.nf'
 
 // WORKFLOW -------------------------------------------------------------------
 
 workflow {
   
-  // ...
+  WORKFLOW ()
 
 }
 
