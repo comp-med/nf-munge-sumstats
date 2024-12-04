@@ -52,17 +52,30 @@ def helpMessage() {
 * Distinguish between VCF and regular table
 * Save VCF as tsv.gz in separate step
 
+Steps:
+
+1. Compile Data
+ - Define mandatory input columns: phenotype_name, download_source [gwas_catalog, open_gwas, other], download_link, local File [T, F], file_location
+2. Download Data
+ - Split by download type, skip locally available data
+3. Harmonize Data (Both Genome Builds)
+
+Support: GBMI, Zenodo
+
 */
 
 // MODULES --------------------------------------------------------------------
 
-include { WORKFLOW } from './workflows/workflow.nf'
+include { PARSE_INPUT } from './workflows/workflow.nf'
 
 // WORKFLOW -------------------------------------------------------------------
 
 workflow {
+
+  // Main file containing Data IDs and necessary meta data
+  def input_table = file(params.input_table)
   
-  WORKFLOW ()
+  PARSE_INPUT (input_table)
 
 }
 
