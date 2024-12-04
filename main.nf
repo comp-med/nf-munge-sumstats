@@ -7,7 +7,7 @@ nextflow.enable.dsl=2
 
 log.info """\
 ===============================================================================
-Pipeline Name
+nf-Munge-Sumstats
 ===============================================================================
 
 Created by the Computational Medicine Group | BIH @ Charité
@@ -38,6 +38,22 @@ def helpMessage() {
 """.stripIndent()
 }
 
+// PLAN -----------------------------------------------------------------------
+
+/*
+
+* Parse input table - what do I need as input information?
+* Download data
+* Run it through munge sumstats
+* Liftover
+
+* Automate GWAS Catalog and openGWAS downloads
+* For everything else, have download link ready
+* Distinguish between VCF and regular table
+* Save VCF as tsv.gz in separate step
+
+*/
+
 // MODULES --------------------------------------------------------------------
 
 include { WORKFLOW } from './workflows/workflow.nf'
@@ -53,7 +69,7 @@ workflow {
 // SUMMARY --------------------------------------------------------------------
 
 workflow.onComplete {
-summary = """
+  def summary = """\
 ===============================================================================
 Workflow execution summary
 ===============================================================================
@@ -66,5 +82,6 @@ outDir      : ${params.outDir}
 
 ===============================================================================
 """
-println summary
+  println summary
 }
+
