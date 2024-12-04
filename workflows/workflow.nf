@@ -13,7 +13,13 @@ workflow PARSE_INPUT {
       checkIfExists: true,
       type: 'file')
   .splitCsv( header: true )
-  .map {row -> [row.phenotype_id, row.data_source, row.data_id, row.data_link, row.data_location]}
+  .map {row -> [
+    row.phenotype_id,
+    row.data_source, 
+    row.data_id, 
+    row.data_link, 
+    row.data_location
+  ]}
   .view()
 
 }
