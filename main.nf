@@ -66,7 +66,7 @@ Support: GBMI, Zenodo
 
 // MODULES --------------------------------------------------------------------
 
-include { PARSE_INPUT } from './workflows/workflow.nf'
+include { DOWNLOAD_DATA } from './workflows/download_data.nf'
 
 // WORKFLOW -------------------------------------------------------------------
 
@@ -74,8 +74,15 @@ workflow {
 
   // Main file containing Data IDs and necessary meta data
   def input_table = file(params.input_table)
+
+  // Where to find all R packages
+  def r_lib = file(params.local_r_library)
   
-  PARSE_INPUT (input_table)
+  // Actual start of the workflow
+  DOWNLOAD_DATA (input_table, r_lib)
+
+  // DEBUG
+  DOWNLOAD_DATA.out.data.view()
 
 }
 
