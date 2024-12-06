@@ -80,9 +80,10 @@ workflow {
   
   // Download raw summary statistics from various sources
   DOWNLOAD_DATA (input_table, r_lib)
+  def raw_data_ch = DOWNLOAD_DATA.out.data
 
-  // DEBUG
-  DOWNLOAD_DATA.out.data.view()
+  // Bin gerade hier TODO
+  raw_data_ch.view()
 
 }
 
