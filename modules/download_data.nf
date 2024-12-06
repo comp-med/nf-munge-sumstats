@@ -6,22 +6,28 @@ process DOWNLOAD_OTHER_DATA {
     tuple val(phenotype_name), val(download_link)
 
     output:
-    tuple val(phenotype_name), path('raw_sumstat_file')
+    tuple val(phenotype_name), path("raw_sumstat_file.*")
 
     script:
     """
-    wget $download_link --output-document raw_sumstat_file
+    # https://stackoverflow.com/questions/965053/extract-filename-and-extension-in-bash
+    download_link="$download_link"
+    filename=\$(basename -- "\$download_link")
+    extension="\${filename##*.}"
+    local_name="raw_sumstat_file.\$extension"
+    wget \$download_link --output-document \$local_name
     """
 
     stub:
     """
-    touch raw_sumstat_file
+    touch raw_sumstat_file.gz
     """
 
 }
 
 process GWAS_CATALOG_SETUP {
-    conda 'lftp'
+
+    conda 'lftp' // TODO create global environment
     tag 'gwascatftp'
     label 'rProcess'
 
@@ -40,7 +46,7 @@ process GWAS_CATALOG_SETUP {
     gwascat_settings <- gwascatftp::create_lftp_settings(
         lftp_bin = "lftp",
         use_proxy = TRUE, 
-        ftp_proxy = "http://proxy.charite.de:8080"
+        ftp_proxy = "http://proxy.charite.de:8080" # TODO Make this not depend on charite environment!
     )
     harmonized_list <- get_harmonised_list(gwascat_settings)
     directory_list <- get_directory_list(gwascat_settings)
@@ -70,18 +76,19 @@ process GWAS_CATALOG_SETUP {
 process DOWNLOAD_GWAS_CATALOG_DATA {
 
     tag "gwas_catalog: ${phenotype_name}"
+    label 'rProcess'
 
     input:
-    tuple val(phenotype_name), val(id), path(harmonized_list), path(directory_list), path(r_lib)
+    tuple val(phenotype_name), 
+          val(id), 
+          path(harmonized_list),
+          path(directory_list),
+          path(r_lib)
 
     output:
-    tuple val(phenotype_name), path('raw_sumstat_file')
+    tuple val(phenotype_name), path("raw_sumstat_file.*")
 
     script:
-    """
-    """
-
-    stub:
     """
     #! /usr/bin/env Rscript
 
@@ -92,21 +99,22 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     # load the `gwascatftp` files created in a separate job
     harmonized_list <- unlist(fread("$harmonized_list", header = FALSE))
     directory_list <- unlist(fread("$directory_list", header = FALSE))
+    gwas_cat_id <- "$id"
 
     gwascat_settings <- gwascatftp::create_lftp_settings(
         lftp_bin = "lftp",
         use_proxy = TRUE, 
-        ftp_proxy = "http://proxy.charite.de:8080"
+        ftp_proxy = "http://proxy.charite.de:8080" # TODO make Charite independent
     )
 
     is_harmonized <- gwascatftp::is_available_harmonised(
-      study_accession = "$id", harmonized_list
+      study_accession = gwas_cat_id, harmonized_list
     )
     download_dir <- fs::path("./")
     if (is_harmonized) {
       
       file_link <- gwascatftp::get_harmonised_accession_file_links(
-        study_accession = "GCST90204201", 
+        study_accession = gwas_cat_id, 
         harmonised_list = harmonized_list,
         directory_list = directory_list, 
         list_all_files = FALSE, 
@@ -116,7 +124,7 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     } else {
       
       file_links <- gwascatftp::get_accession_file_links(
-      study_accession = "GCST90204201", 
+      study_accession = gwas_cat_id, 
       directory_list = directory_list, 
       lftp_settings = gwascat_settings
     )
@@ -139,63 +147,44 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
       )
 
     downloaded_file_name <- fs::path_file(unlist(file_link))
-    fs::file_move(path = downloaded_file_name, "raw_sumstat_file")
+    file_type <- fs::path_ext(downloaded_file_name)
+    fs::file_move(
+        path = downloaded_file_name, 
+        path_ext_set("raw_sumstat_file", file_type)
+    )
     """
 
-    // stub:
-    // """
-    // touch raw_sumstat_file
-    // """
+    stub:
+    """
+    touch raw_sumstat_file.gz
+    """
 
 }
 
 process DOWNLOAD_OPEN_GWAS_DATA {
 
     tag "open_gwas: ${phenotype_name}"
-    label 'rProcess'
 
     input:
     tuple val(phenotype_name), val(id)
 
     output:
-    tuple val(phenotype_name), path('raw_sumstat_file')
+    tuple val(phenotype_name), path('raw_sumstat_file.vcf.gz')
 
     script: 
     """
-    #! /usr/bin/env R
+    # TODO make this not depend on Charite proxies
+    export http_proxy="http://proxy.charite.de:8080"
+    export https_proxy=\$http_proxy
+    export HTTPS_PROXY=\$http_proxy
+    export HTTP_PROXY=\$http_proxy
+    wget https://gwas.mrcieu.ac.uk/files/${id}/${id}.vcf.gz \
+        --output-document raw_sumstat_file.vcf.gz
     """
 
     stub:
     """
-    touch raw_sumstat_file
+    touch raw_sumstat_file.vcf.gz
     """
 
 }
-
-
-
-// process PROCESS_NAME {
-// 
-//   // cache 'lenient'
-//   // tag "$input_value"
-//   // label 'process_label'
-//   // publishDir
-// 
-//   input:
-//   tuple val(some_value), path(some_path)
-//   path(some_path)
-//   each path(some_path)
-// 
-//   output:
-//   path "./optional_dir/*file.ext", optional: false, emit: output_name
-// 
-//   script:
-//   """
-//   ./script.R \
-//     $input_parameter \
-//     ${task.some_parameter} \
-//     ${params.some_parameter}
-// 
-//   """
-// 
-// }

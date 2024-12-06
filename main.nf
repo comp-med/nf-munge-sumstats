@@ -78,7 +78,7 @@ workflow {
   // Where to find all R packages
   def r_lib = Channel.fromPath(params.local_r_library)
   
-  // Actual start of the workflow
+  // Download raw summary statistics from various sources
   DOWNLOAD_DATA (input_table, r_lib)
 
   // DEBUG

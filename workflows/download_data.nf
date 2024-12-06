@@ -49,7 +49,9 @@ workflow DOWNLOAD_DATA {
 
     def gwas_cat_setup_ch = GWAS_CATALOG_SETUP( r_lib )
     def gwas_cat_data_ch = DOWNLOAD_GWAS_CATALOG_DATA( 
-        data_src_ch.gwas_catalog.combine(gwas_cat_setup_ch).combine(r_lib)
+        data_src_ch.gwas_catalog
+            .combine(gwas_cat_setup_ch)
+            .combine(r_lib)
     )
     
     // Join channels that contain the sumstat files
