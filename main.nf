@@ -76,7 +76,7 @@ workflow {
   def input_table = file(params.input_table)
 
   // Where to find all R packages
-  def r_lib = file(params.local_r_library)
+  def r_lib = Channel.fromPath(params.local_r_library)
   
   // Actual start of the workflow
   DOWNLOAD_DATA (input_table, r_lib)
