@@ -1,5 +1,0 @@
-phenotype_id,data_source,data_id,data_link,data_location
-atrial_fibrillation,gwas_catalog,GCST90204201,,
-venous_thromboembolism,other,,https://gbmi-sumstats.s3.amazonaws.com/VTE_Bothsex_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz,
-heart_failure,local,,,/home/carl/SC-HPC/sc-projects/sc-proj-computational-medicine/people/Carl/projects/06_dzhk_bhf_prot4cvd/01_analysis_plan/input/hermes_hf_subtypes_gwas_summary_statistics/Pheno1_ALL/FORMAT-METAL_Pheno1_ALL.tsv.gz
-body_mass_index,open_gwas,ieu-b-5118,,
