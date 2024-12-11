@@ -58,6 +58,10 @@ Steps:
  - Define mandatory input columns: phenotype_name, download_source [gwas_catalog, open_gwas, other], download_link, local File [T, F], file_location
 2. Download Data
  - Split by download type, skip locally available data
+3. Prepare harmonization 
+ - create custom `sumstatsColHeaders` (How to output unmatched colnames?)
+ - Get genome build for each file irrespective of annotation, which can be wrong
+ - 
 3. Harmonize Data (Both Genome Builds)
 
 Support: GBMI, Zenodo
@@ -67,6 +71,8 @@ Support: GBMI, Zenodo
 // MODULES --------------------------------------------------------------------
 
 include { DOWNLOAD_DATA } from './workflows/download_data.nf'
+include { SETUP_MUNGING } from './workflows/setup_munging.nf'
+// include process 
 
 // WORKFLOW -------------------------------------------------------------------
 
@@ -80,10 +86,17 @@ workflow {
   
   // Download raw summary statistics from various sources
   DOWNLOAD_DATA (input_table, r_lib)
-  def raw_data_ch = DOWNLOAD_DATA.out.data
+  def input_files_ch = DOWNLOAD_DATA.out.data
 
-  // Bin gerade hier TODO
-  raw_data_ch.view()
+  // Prepare additional input for liftover function
+  SETUP_MUNGING (input_files_ch, r_lib)
+
+  // Check integrity of files somehow?
+  // Create colheaders table
+
+
+  // DEBUG output
+  // input_files_ch.view()
 
 }
 
