@@ -1,5 +1,6 @@
 process DOWNLOAD_OTHER_DATA {
 
+    cache true
     tag "other: ${phenotype_name}"
 
     input:
@@ -26,9 +27,10 @@ process DOWNLOAD_OTHER_DATA {
 }
 
 process GWAS_CATALOG_SETUP {
-
+    
+    cache true
+    tag 'single_execution'
     conda 'lftp' // TODO create global environment
-    tag 'gwascatftp'
     label 'rProcess'
 
     input:
@@ -56,25 +58,15 @@ process GWAS_CATALOG_SETUP {
 
     stub:
     """
-    #! /usr/bin/env Rscript
-
-    suppressPackageStartupMessages(library(gwascatftp, lib.loc = "$r_lib"))
-
-    gwascat_settings <- gwascatftp::create_lftp_settings(
-        lftp_bin = "lftp",
-        use_proxy = TRUE, 
-        ftp_proxy = "http://proxy.charite.de:8080"
-    )
-    harmonized_list <- get_harmonised_list(gwascat_settings)
-    directory_list <- get_directory_list(gwascat_settings)
-    writeLines(harmonized_list, con = "harmonized_list")
-    writeLines(directory_list, con = "directory_list")
+    touch harmonized_list
+    touch directory_list
     """
 
 }
 
 process DOWNLOAD_GWAS_CATALOG_DATA {
-
+    
+    cache true
     tag "gwas_catalog: ${phenotype_name}"
     label 'rProcess'
 
@@ -163,6 +155,7 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
 
 process DOWNLOAD_OPEN_GWAS_DATA {
 
+    cache true
     tag "open_gwas: ${phenotype_name}"
 
     input:
