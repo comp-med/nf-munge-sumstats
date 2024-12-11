@@ -1,11 +1,12 @@
 // Check input files for custom headers
 // Create the custom header file for mapping column names
 
-// include {
-    // ...
-//} from '../modules/setup_munging.nf'
+include {
+    CHECK_INPUT_COL_HEADERS 
+} from '../modules/setup_munging.nf'
 
 workflow SETUP_MUNGING {
+
     take: 
     input_files_ch
     r_lib
@@ -20,10 +21,12 @@ workflow SETUP_MUNGING {
             newLine: true
         )
 
-    CHECK_INPUT_COL_HEADERS(
+    def custom_col_headers = CHECK_INPUT_COL_HEADERS (
         input_file_table_ch,
         r_lib
     )
+
+    custom_col_headers.view()
 
 
 
