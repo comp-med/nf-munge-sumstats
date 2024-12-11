@@ -94,5 +94,4 @@ process CHECK_INPUT_COL_HEADERS {
     """
     touch sumstatColHeaders.csv
     """
-
 }

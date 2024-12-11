@@ -21,14 +21,11 @@ workflow SETUP_MUNGING {
             newLine: true
         )
 
-    def custom_col_headers = CHECK_INPUT_COL_HEADERS (
+    def check_input_col_headers_ch = CHECK_INPUT_COL_HEADERS (
         input_file_table_ch,
         r_lib
     )
 
-    custom_col_headers.view()
-
-
-
-    // emit:
+    emit:
+    custom_col_headers = check_input_col_headers_ch
 }

@@ -72,7 +72,7 @@ Support: GBMI, Zenodo
 
 include { DOWNLOAD_DATA } from './workflows/download_data.nf'
 include { SETUP_MUNGING } from './workflows/setup_munging.nf'
-// include process 
+include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
 // WORKFLOW -------------------------------------------------------------------
 
@@ -90,11 +90,15 @@ workflow {
 
   // Prepare additional input for liftover function
   SETUP_MUNGING (input_files_ch, r_lib)
+  def custom_col_headers = SETUP_MUNGING.out.custom_col_headers
 
+  MUNGE_SUMSTATS(
+    input_files_ch,
+    custom_col_headers,
+    r_lib
+  )
   // Check integrity of files somehow?
   // Create colheaders table
-
-
   // DEBUG output
   // input_files_ch.view()
 
