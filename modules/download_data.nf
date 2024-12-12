@@ -68,6 +68,7 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     
     cache true
     tag "gwas_catalog: ${phenotype_name}"
+    conda 'lftp' // TODO create global environment
     label 'rProcess'
 
     input:
