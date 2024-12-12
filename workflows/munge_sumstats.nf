@@ -15,7 +15,7 @@ workflow MUNGE_SUMSTATS {
         input_files_ch
             .combine(r_lib) 
     ).map {
-        tup -> [tup[0], tup[1], "${tup[2]}"]
+        tup -> [tup[0], file(tup[1]).text, tup[2]]
     }
     .view()
 

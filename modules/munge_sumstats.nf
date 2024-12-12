@@ -38,12 +38,10 @@ process GET_GENOME_BUILD {
         nThread = 8 # TODO: Make this adaptable!
     )
     file_genome_build <- tolower(unlist(file_genome_build))
-    write.table(
+    writeLines(
         file_genome_build,
         "genome_build", 
-        quote = FALSE, 
-        col.names = FALSE,
-        row.names = FALSE
+        sep = ""
     )
     """
 
