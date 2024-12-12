@@ -83,9 +83,10 @@ workflow {
 
   // Where to find all R packages
   def r_lib = Channel.fromPath(params.local_r_library)
+  def lftp_bin = Channel.fromPath(params.lftp_bin)
   
   // Download raw summary statistics from various sources
-  DOWNLOAD_DATA (input_table, r_lib)
+  DOWNLOAD_DATA (input_table, r_lib, lftp_bin)
   def input_files_ch = DOWNLOAD_DATA.out.data
 
   // Prepare additional input for liftover function

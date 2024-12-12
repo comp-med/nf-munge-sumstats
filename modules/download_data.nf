@@ -30,11 +30,10 @@ process GWAS_CATALOG_SETUP {
     
     cache true
     tag 'single_execution'
-    conda 'lftp' // TODO create global environment
     label 'rProcess'
 
     input:
-    path r_lib
+    tuple path(r_lib), path(lftp_bin)
 
     output:
     tuple path("harmonized_list"), path("directory_list")
@@ -46,7 +45,7 @@ process GWAS_CATALOG_SETUP {
     suppressPackageStartupMessages(library(gwascatftp, lib.loc = "$r_lib"))
 
     gwascat_settings <- gwascatftp::create_lftp_settings(
-        lftp_bin = "lftp",
+        lftp_bin = "$lftp_bin", # TODO make this but in nice
         use_proxy = TRUE, 
         ftp_proxy = "http://proxy.charite.de:8080" # TODO Make this not depend on charite environment!
     )
@@ -68,7 +67,6 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     
     cache true
     tag "gwas_catalog: ${phenotype_name}"
-    conda 'lftp' // TODO create global environment
     label 'rProcess'
 
     input:
@@ -76,7 +74,8 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
           val(id), 
           path(harmonized_list),
           path(directory_list),
-          path(r_lib)
+          path(r_lib),
+          path(lftp_bin)
 
     output:
     tuple val(phenotype_name), path("raw_sumstat_file.*")
@@ -95,7 +94,7 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     gwas_cat_id <- "$id"
 
     gwascat_settings <- gwascatftp::create_lftp_settings(
-        lftp_bin = "lftp",
+        lftp_bin = "$lftp_bin", # TODO make this but in nice
         use_proxy = TRUE, 
         ftp_proxy = "http://proxy.charite.de:8080" # TODO make Charite independent
     )

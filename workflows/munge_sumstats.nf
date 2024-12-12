@@ -11,8 +11,10 @@ workflow MUNGE_SUMSTATS {
 
     main:
 
-    GET_GENOME_BUILD( input_files_ch.combine(r_lib) ).view()
-
+    GET_GENOME_BUILD(
+        input_files_ch
+            .combine(r_lib) 
+    ).view()
 
     // TODO
     // MUNGE_SUMSTATS()

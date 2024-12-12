@@ -18,6 +18,7 @@ workflow DOWNLOAD_DATA {
     take:
     input_table
     r_lib
+    lftp_bin
 
     main:
     def data_src_ch = Channel.fromPath(
@@ -47,11 +48,12 @@ workflow DOWNLOAD_DATA {
     def other_data_ch = DOWNLOAD_OTHER_DATA( data_src_ch.other )
     def open_gwas_data_ch = DOWNLOAD_OPEN_GWAS_DATA( data_src_ch.open_gwas )
 
-    def gwas_cat_setup_ch = GWAS_CATALOG_SETUP( r_lib )
+    def gwas_cat_setup_ch = GWAS_CATALOG_SETUP( r_lib.combine(lftp_bin) )
     def gwas_cat_data_ch = DOWNLOAD_GWAS_CATALOG_DATA( 
         data_src_ch.gwas_catalog
             .combine(gwas_cat_setup_ch)
             .combine(r_lib)
+            .combine(lftp_bin)
     )
     
     // Join channels that contain the sumstat files
