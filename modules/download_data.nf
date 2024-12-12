@@ -45,7 +45,7 @@ process GWAS_CATALOG_SETUP {
     suppressPackageStartupMessages(library(gwascatftp, lib.loc = "$r_lib"))
 
     gwascat_settings <- gwascatftp::create_lftp_settings(
-        lftp_bin = "$lftp_bin", # TODO make this but in nice
+        lftp_bin = "./$lftp_bin", # TODO make this but in nice
         use_proxy = TRUE, 
         ftp_proxy = "http://proxy.charite.de:8080" # TODO Make this not depend on charite environment!
     )
@@ -94,7 +94,7 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     gwas_cat_id <- "$id"
 
     gwascat_settings <- gwascatftp::create_lftp_settings(
-        lftp_bin = "$lftp_bin", # TODO make this but in nice
+        lftp_bin = "./$lftp_bin", # TODO make this but in nice
         use_proxy = TRUE, 
         ftp_proxy = "http://proxy.charite.de:8080" # TODO make Charite independent
     )
