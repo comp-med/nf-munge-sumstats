@@ -15,6 +15,8 @@ process GET_GENOME_BUILD {
 
     script:
     """
+    #! /usr/bin/env Rscript
+
     # SETUP ----
     r_lib = "$r_lib"
     library("MungeSumstats", lib.loc = r_lib)
