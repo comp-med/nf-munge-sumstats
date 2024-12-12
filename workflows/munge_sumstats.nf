@@ -14,7 +14,10 @@ workflow MUNGE_SUMSTATS {
     GET_GENOME_BUILD(
         input_files_ch
             .combine(r_lib) 
-    ).view()
+    ).map {
+        tup -> [tup[0], tup[1], "${tup[2]}"]
+    }
+    .view()
 
     // TODO
     // MUNGE_SUMSTATS()

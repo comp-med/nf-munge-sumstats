@@ -49,6 +49,7 @@ process GET_GENOME_BUILD {
 
     stub:
     """
+    echo "grch37" > genome_build
     """
 
 }
