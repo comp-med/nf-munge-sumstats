@@ -29,13 +29,13 @@ process GET_GENOME_BUILD {
     names(raw_sumstat_file) <- phenotype_name 
 
     file_genome_build <- get_genome_builds(
-        sumstats_list,
+        raw_sumstat_file,
         header_only = TRUE,
         sampled_snps = 50000,
         dbSNP = 155,
-        nThread = 6
+        nThread = 8 # TODO: Make this adaptable!
     )
-    Sys.setenv(GENOME_BUILD = unlist(file_genome_build))
+    Sys.setenv(GENOME_BUILD = tolower(unlist(file_genome_build)))
     """
 
     stub:
