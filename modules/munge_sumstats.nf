@@ -11,7 +11,7 @@ process GET_GENOME_BUILD {
     tuple val(phenotype_name), path(raw_sumstat_file), path(r_lib)
 
     output:
-    tuple val(phenotype_name), env("GENOME_BUILD"), path(raw_sumstat_file)
+    tuple val(phenotype_name), path("genome_build"), path(raw_sumstat_file)
 
     script:
     """
@@ -37,7 +37,14 @@ process GET_GENOME_BUILD {
         dbSNP = 155,
         nThread = 8 # TODO: Make this adaptable!
     )
-    Sys.setenv(GENOME_BUILD = tolower(unlist(file_genome_build)))
+    file_genome_build <- tolower(unlist(file_genome_build))
+    write.table(
+        file_genome_build,
+        "genome_build", 
+        quote = FALSE, 
+        col.names = FALSE,
+        row.names = FALSE
+    )
     """
 
     stub:
