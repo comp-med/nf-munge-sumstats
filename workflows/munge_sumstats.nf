@@ -1,5 +1,6 @@
 include {
-    GET_GENOME_BUILD
+    GET_GENOME_BUILD;
+    MUNGE_SUMSTATS
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -11,16 +12,17 @@ workflow MUNGE_SUMSTATS {
 
     main:
 
-    GET_GENOME_BUILD(
-        input_files_ch
-            .combine(r_lib) 
+    input_files_ch = GET_GENOME_BUILD (
+        input_files_ch.combine(r_lib) 
     ).map {
         tup -> [tup[0], file(tup[1]).text, tup[2]]
     }
-    .view()
 
     // TODO
-    // MUNGE_SUMSTATS()
+    // Run once in current genome build and once with liftover
+    MUNGE_SUMSTATS(
+        input_files_ch.combine(custom_col_headers, r_lib)
+    )
 
     // emit:
 }

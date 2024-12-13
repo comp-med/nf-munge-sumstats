@@ -1,6 +1,4 @@
-/*
-    * I want to create pre-processed data in both GRCh37 and GRCh38
-*/
+// To know whether I want to liftover data or not I need to infer genome build
 process GET_GENOME_BUILD {
     
     cache true
@@ -18,7 +16,7 @@ process GET_GENOME_BUILD {
     #! /usr/bin/env Rscript
 
     # SETUP ----
-    r_lib = "$r_lib"
+    r_lib <- "$r_lib"
     library("MungeSumstats", lib.loc = r_lib)
     library("GenomicFiles", lib.loc = r_lib)
 
@@ -48,6 +46,53 @@ process GET_GENOME_BUILD {
     stub:
     """
     echo "grch37" > genome_build
+    """
+
+}
+
+// TODO: Write dedicated liftover process using bcftools?
+
+// Main function that 
+process MUNGE_SUMSTATS {
+    
+    cache true
+    tag "$phenotype_name, $genome_build"
+    label 'rProcess'
+
+    input:
+    tuple
+        val(phenotype_name),
+        val(genome_build),
+        path(raw_sumstat_file), 
+        path(custom_col_headers),
+        path(r_lib)
+
+    output:
+    tuple
+        val(phenotype_name),
+        val(genome_build),
+        path("munged_sumstat_file")
+
+    script:
+    """
+    #! /usr/bin/env Rscript
+    
+    # SETUP ----
+    r_lib <- "$r_lib"
+    library("MungeSumstats", lib.loc = r_lib)
+    library("GenomicFiles", lib.loc = r_lib)
+    library("data.table", lib.loc = r_lib)
+
+    # INPUT VARIABLES ----
+    phenotype_name <- "$phenotype_name"
+    raw_sumstat_file <- "$raw_sumstat_file"
+    genome_build <- "$genome_build"
+    custom_sumstatsColHeaders <- "$custom_col_headers"
+    """
+
+    stub:
+    """
+    touch sumstats_${genome_build}.tsv.gz
     """
 
 }
