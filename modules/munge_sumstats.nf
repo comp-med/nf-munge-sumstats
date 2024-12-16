@@ -133,6 +133,9 @@ process FORMAT_SUMSTATS {
         force_new = TRUE
     )
     
+    # Output is saved in list when logging is active!
+    sumstats <- sumstats$sumstats 
+    
     # CLEANUP ----
     # This is annoying but there's no way around it.
     file.remove(formatted_sumstats_file)
@@ -155,13 +158,78 @@ process FORMAT_SUMSTATS {
 }
 
 // Indexing and zipping
-// process SORT_GZIP_INDEX {
+process SORT_GZIP_INDEX {
+
+    cache true
+    tag "$phenotype_name"
+
+    input:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path(formatted_sumstat_file), 
+        path(bcftools_liftover_bin),
+        path(bgzip_bin)
+        
+    output:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path("formatted_sumstats_${genome_build}.vcf.gz")
+        path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
+
+    script:
+    """
+    BCFTOOLS='$bcftools_liftover_bin'
+    BGZIP='$bgzip_bin'
+    INPUT_VCF='$formatted_sumstat_file'
+
+    # Sort the file (to be sure)
+    \$BCFTOOLS sort \$INPUT_VCF -o \$INPUT_VCF
+
+    # BGZip the file
+    \$BGZIP \$INPUT_VCF
+
+    # Index the file
+    \$BCFTOOLS index --tbi \${INPUT_VCF}.gz
+    """
+
+    stub:
+    """
+    touch formatted_sumstats_${genome_build}.vcf.gz
+    touch formatted_sumstats_${genome_build}.vcf.gz.tbi
+    """
   
-// }
+}
+
+process GET_LIFTOVER_FILES {
+    
+    cache true
+    tag "single_execution"
+
+    input:
+
+    output:
+    tuple
+        path(),
+        path(),
+        path(),
+        path(),
+
+    script:
+    """
+    # Chain Files
+    https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz
+    https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
+    """
+
+    stub:
+    """
+    """
+
+}
 
 
 // process LIFTOVER_SUMSTATS {
 // 
 // }
-// TODO: Write dedicated liftover process using bcftools?
+// TODO: Write dedicated liftover process using bcftools
 
