@@ -115,7 +115,7 @@ process FORMAT_SUMSTATS {
         
         ref_genome = genome_build, 
         on_ref_genome = TRUE, 
-        convert_ref_genome = NULL
+        convert_ref_genome = NULL,
         
         mapping_file = custom_sumstatsColHeaders, 
         nThread = 20,
@@ -148,6 +148,10 @@ process FORMAT_SUMSTATS {
 }
 
 // process CHROMOSOME_MAPPING_TABLE
+
+// Indexing and zipping
+
+
 
 // process LIFTOVER_SUMSTATS {
 // 
