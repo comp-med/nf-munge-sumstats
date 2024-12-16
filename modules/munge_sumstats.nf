@@ -82,6 +82,11 @@ process FORMAT_SUMSTATS {
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
     raw_sumstat_file <- "$raw_sumstat_file"
+    formatted_sumstats_file <- paste0(
+        "formatted_sumstats_", 
+        genome_build,
+        ".vcf.bgz"
+    )
     genome_build <- "$genome_build"
     custom_sumstatsColHeaders <- "$custom_col_headers"
     custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
@@ -91,7 +96,7 @@ process FORMAT_SUMSTATS {
     # FORMATTING ----
     sumstats <- MungeSumstats::format_sumstats(
         path = raw_sumstat_file,
-        save_path = formatted_sumstat_file,
+        save_path = formatted_sumstats_file,
         write_vcf = TRUE,
         
         rmv_chr = c("Y", "MT"), 
@@ -128,7 +133,7 @@ process FORMAT_SUMSTATS {
     
     # CLEANUP ----
     # This is annoying but there's no way around it.
-    file.remove(formatted_sumstat_file)
+    file.remove(formatted_sumstats_file)
 
     # Save with the correct chromosome coding
     seqlevelsStyle(sumstats) <- "UCSC"
