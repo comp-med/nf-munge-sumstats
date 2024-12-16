@@ -134,7 +134,7 @@ process FORMAT_SUMSTATS {
     )
     
     # Output is saved in list when logging is active!
-    sumstats <- sumstats$sumstats 
+    sumstats <- sumstats\$sumstats 
     
     # CLEANUP ----
     # This is annoying but there's no way around it.
