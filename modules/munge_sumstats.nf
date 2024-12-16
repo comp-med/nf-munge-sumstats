@@ -81,13 +81,13 @@ process FORMAT_SUMSTATS {
 
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
+    genome_build <- "$genome_build"
     raw_sumstat_file <- "$raw_sumstat_file"
     formatted_sumstats_file <- paste0(
         "formatted_sumstats_", 
         genome_build,
         ".vcf.bgz"
     )
-    genome_build <- "$genome_build"
     custom_sumstatsColHeaders <- "$custom_col_headers"
     custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
     setDF(custom_sumstatsColHeaders)
