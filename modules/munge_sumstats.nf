@@ -50,10 +50,8 @@ process GET_GENOME_BUILD {
 
 }
 
-// TODO: Write dedicated liftover process using bcftools?
-
 // Main function that 
-process MUNGE_SUMSTATS {
+process FORMAT_SUMSTATS {
     
     cache true
     tag "$phenotype_name, $genome_build"
@@ -71,7 +69,7 @@ process MUNGE_SUMSTATS {
     tuple
         val(phenotype_name),
         val(genome_build),
-        path("munged_sumstat_file")
+        path("formatted_sumstats_${genome_build}.vcf.bgz")
 
     script:
     """
@@ -92,7 +90,13 @@ process MUNGE_SUMSTATS {
 
     stub:
     """
-    touch sumstats_${genome_build}.tsv.gz
+    touch formatted_sumstats_${genome_build}.tsv.gz
     """
 
 }
+
+// process MUNGE_SUMSTATS_LIFTOVER {
+// 
+// }
+// TODO: Write dedicated liftover process using bcftools?
+

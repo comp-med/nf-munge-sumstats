@@ -68,7 +68,7 @@ Support: GBMI, Zenodo
 
 */
 
-// MODULES --------------------------------------------------------------------
+// WORKFLOWS ------------------------------------------------------------------
 
 include { DOWNLOAD_DATA } from './workflows/download_data.nf'
 include { SETUP_MUNGING } from './workflows/setup_munging.nf'
