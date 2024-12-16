@@ -21,7 +21,9 @@ workflow MUNGE_SUMSTATS {
     // TODO
     // Run once in current genome build and once with liftover
     FORMAT_SUMSTATS(
-        input_files_ch.combine(custom_col_headers, r_lib)
+        input_files_ch
+            .combine(custom_col_headers)
+            .combine(r_lib)
     )
 
     // emit:
