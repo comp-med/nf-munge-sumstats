@@ -53,7 +53,7 @@ process GET_GENOME_BUILD {
 // Format summary statistics without lifting them over
 process FORMAT_SUMSTATS {
     
-    cache true
+    cache false
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
 
@@ -75,9 +75,10 @@ process FORMAT_SUMSTATS {
     
     # SETUP ----
     r_lib <- "$r_lib"
-    library("MungeSumstats", lib.loc = r_lib)
-    library("GenomicFiles", lib.loc = r_lib)
-    library("data.table", lib.loc = r_lib)
+    suppressPackageStartupMessages(library("MungeSumstats", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("GenomicFiles", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("VariantAnnotation", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
 
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
