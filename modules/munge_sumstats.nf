@@ -78,6 +78,7 @@ process FORMAT_SUMSTATS {
     suppressPackageStartupMessages(library("MungeSumstats", lib.loc = r_lib))
     suppressPackageStartupMessages(library("GenomicFiles", lib.loc = r_lib))
     suppressPackageStartupMessages(library("VariantAnnotation", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("GenomeInfoDb", lib.loc = r_lib))
     suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
 
     # INPUT VARIABLES ----
@@ -137,7 +138,7 @@ process FORMAT_SUMSTATS {
     file.remove(formatted_sumstats_file)
 
     # Save with the correct chromosome coding
-    seqlevelsStyle(sumstats) <- "UCSC"
+    GenomeInfoDb::seqlevelsStyle(sumstats) <- "UCSC"
 
     # SAVE ----
     VariantAnnotation::writeVcf(
@@ -153,10 +154,10 @@ process FORMAT_SUMSTATS {
 
 }
 
-// process CHROMOSOME_MAPPING_TABLE
-
 // Indexing and zipping
-
+// process SORT_GZIP_INDEX {
+  
+// }
 
 
 // process LIFTOVER_SUMSTATS {
