@@ -88,6 +88,7 @@ process FORMAT_SUMSTATS {
     setDF(custom_sumstatsColHeaders)
     dir.create("./logs", showWarnings = FALSE)
 
+    # FORMATTING ----
     sumstats <- MungeSumstats::format_sumstats(
         path = raw_sumstat_file,
         save_path = formatted_sumstat_file,
@@ -124,12 +125,15 @@ process FORMAT_SUMSTATS {
         log_folder_ind = FALSE,
         force_new = TRUE
     )
-
+    
+    # CLEANUP ----
     # This is annoying but there's no way around it.
     file.remove(formatted_sumstat_file)
 
     # Save with the correct chromosome coding
     seqlevelsStyle(sumstats) <- "UCSC"
+
+    # SAVE ----
     VariantAnnotation::writeVcf(
         sumstats, 
         paste0("formatted_sumstats_", genome_build, ".vcf")
@@ -143,7 +147,7 @@ process FORMAT_SUMSTATS {
 
 }
 
-process CHROMOSOME_MAPPING_TABLE
+// process CHROMOSOME_MAPPING_TABLE
 
 // process LIFTOVER_SUMSTATS {
 // 
