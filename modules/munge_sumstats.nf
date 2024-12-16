@@ -200,32 +200,32 @@ process SORT_GZIP_INDEX {
   
 }
 
-process GET_LIFTOVER_FILES {
-    
-    cache true
-    tag "single_execution"
-
-    input:
-
-    output:
-    tuple
-        path(),
-        path(),
-        path(),
-        path(),
-
-    script:
-    """
-    # Chain Files
-    https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz
-    https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
-    """
-
-    stub:
-    """
-    """
-
-}
+// process GET_LIFTOVER_FILES {
+//     
+//     cache true
+//     tag "single_execution"
+// 
+//     input:
+// 
+//     output:
+//     tuple
+//         path(),
+//         path(),
+//         path(),
+//         path(),
+// 
+//     script:
+//     """
+//     # Chain Files
+//     https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz
+//     https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
+//     """
+// 
+//     stub:
+//     """
+//     """
+// 
+// }
 
 
 // process LIFTOVER_SUMSTATS {
