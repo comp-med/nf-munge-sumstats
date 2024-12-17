@@ -82,8 +82,12 @@ workflow {
   def input_table = file(params.input_table)
 
   // Where to find all R packages
-  def r_lib = Channel.fromPath(params.local_r_library)
+  def r_lib    = Channel.fromPath(params.local_r_library)
+
+  // Where to find additional binaries // TODO: create environments
   def lftp_bin = Channel.fromPath(params.lftp_bin)
+  def bcftools_liftover_bin = Channel.fromPath(params.bcftools_liftover_bin)
+  def bgzip_bin = Channel.fromPath(params.bgzip_bin)
   
   // Download raw summary statistics from various sources
   DOWNLOAD_DATA (input_table, r_lib, lftp_bin)
@@ -95,12 +99,13 @@ workflow {
 
   // Main workflow: format and liftover summary statistics
   MUNGE_SUMSTATS(
-    input_files_ch,
-    custom_col_headers,
-    r_lib
+      input_files_ch,
+      custom_col_headers,
+      r_lib,
+      bcftools_liftover_bin,
+      bgzip_bin
   )
   // Check integrity of files somehow?
-  // Create colheaders table
   // DEBUG output
   // input_files_ch.view()
 
@@ -109,7 +114,7 @@ workflow {
 // SUMMARY --------------------------------------------------------------------
 
 workflow.onComplete {
-  def summary = """\
+    def summary = """\
 ===============================================================================
 Workflow execution summary
 ===============================================================================
@@ -122,6 +127,6 @@ outDir      : ${params.outDir}
 
 ===============================================================================
 """
-  println summary
+    println summary
 }
 

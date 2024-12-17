@@ -53,7 +53,7 @@ process GET_GENOME_BUILD {
 // Format summary statistics without lifting them over
 process FORMAT_SUMSTATS {
     
-    cache false
+    cache true
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
 
@@ -178,9 +178,9 @@ process SORT_GZIP_INDEX {
 
     script:
     """
-    BCFTOOLS='$bcftools_liftover_bin'
-    BGZIP='$bgzip_bin'
-    INPUT_VCF='$formatted_sumstat_file'
+    BCFTOOLS="$bcftools_liftover_bin"
+    BGZIP="$bgzip_bin"
+    INPUT_VCF="$formatted_sumstat_file"
 
     # Sort the file (to be sure)
     \$BCFTOOLS sort \$INPUT_VCF -o \$INPUT_VCF
