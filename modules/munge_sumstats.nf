@@ -185,13 +185,13 @@ process SORT_GZIP_INDEX {
     INPUT_VCF="$formatted_sumstat_file"
 
     # Sort the file (to be sure)
-    \$BCFTOOLS sort \$INPUT_VCF -o \$INPUT_VCF
+    ./\$BCFTOOLS sort \$INPUT_VCF -o \$INPUT_VCF
 
     # BGZip the file
-    \$BGZIP \$INPUT_VCF
+    ./\$BGZIP \$INPUT_VCF
 
     # Index the file
-    \$BCFTOOLS index --tbi \${INPUT_VCF}.gz
+    ./\$BCFTOOLS index --tbi \${INPUT_VCF}.gz
     """
 
     stub:
@@ -202,40 +202,44 @@ process SORT_GZIP_INDEX {
   
 }
 
-process GET_LIFTOVER_FILES {
-    
-    cache true
-    tag "single_execution"
-
-    output:
-    tuple
-        path(),
-        path(),
-        path("hg19ToHg38.over.chain.gz"),
-        path("hg38ToHg19.over.chain.gz"),
-
-    script:
-    """
-    
-    # TODO: make this configuration globally
-    export http_proxy="http://proxy.charite.de:8080"
-    export https_proxy=$http_proxy
-    export HTTPS_PROXY=$http_proxy
-    export HTTP_PROXY=$http_proxy
-
-
-    # Chain Files
-    CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
-    CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
-
-
-    """
-
-    stub:
-    """
-    """
-
-}
+// process GET_LIFTOVER_FILES {
+//     
+//     cache true
+//     tag "single_execution"
+// 
+//     output:
+//     tuple
+//         path('hg19.fa'),
+//         path('hg38.fa'),
+//         path('hg19ToHg38.over.chain.gz'),
+//         path('hg38ToHg19.over.chain.gz'),
+// 
+//     script:
+//     """
+//     
+//     # TODO: make this configuration globally
+//     export http_proxy="http://proxy.charite.de:8080"
+//     export https_proxy=$http_proxy
+//     export HTTPS_PROXY=$http_proxy
+//     export HTTP_PROXY=$http_proxy
+// 
+// 
+//     # Chain Files
+//     CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
+//     CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
+// 
+//     # Reference Assemblies
+//     REF1='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/latest/hg19.fa.gz'
+//     REF2='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz'
+// 
+//     """
+// 
+//     stub:
+//     """
+//     touch hg19ToHg38.over.chain.gz hg38ToHg19.over.chain.gz hg19.fa hg38.fa.gz
+//     """
+// 
+// }
 
 
 // process LIFTOVER_SUMSTATS {
