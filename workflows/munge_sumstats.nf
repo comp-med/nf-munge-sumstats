@@ -2,6 +2,7 @@ include {
     GET_GENOME_BUILD;
     FORMAT_SUMSTATS;
     SORT_GZIP_INDEX;
+    GET_LIFTOVER_FILES;
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -22,22 +23,22 @@ workflow MUNGE_SUMSTATS {
     }
 
     // Format files in their current genome build
-    formatted_files_ch = FORMAT_SUMSTATS (
+    def formatted_files_ch = FORMAT_SUMSTATS (
         input_files_ch
             .combine(custom_col_headers)
             .combine(r_lib)
     )
 
     // Before liftover, files need to be gzipped and indexed
-    indexed_files_ch = SORT_GZIP_INDEX (
+    def indexed_files_ch = SORT_GZIP_INDEX (
         formatted_files_ch
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)
     ).view()
 
-    //def liftover_files_ch = GET_LIFTOVER_FILES (
-        // TODO
-    //)
+    def liftover_files_ch = GET_LIFTOVER_FILES (
+        bgzip_bin
+    )
 
     //def liftover_ch = LIFTOVER_SUMSTATS (
         // TODO

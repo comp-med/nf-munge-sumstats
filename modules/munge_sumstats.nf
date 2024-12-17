@@ -202,48 +202,56 @@ process SORT_GZIP_INDEX {
   
 }
 
-// process GET_LIFTOVER_FILES {
-//     
-//     cache true
-//     tag "single_execution"
-// 
-//     output:
-//     tuple
-//         path('hg19.fa'),
-//         path('hg38.fa'),
-//         path('hg19ToHg38.over.chain.gz'),
-//         path('hg38ToHg19.over.chain.gz'),
-// 
-//     script:
-//     """
-//     
-//     # TODO: make this configuration globally
-//     export http_proxy="http://proxy.charite.de:8080"
-//     export https_proxy=$http_proxy
-//     export HTTPS_PROXY=$http_proxy
-//     export HTTP_PROXY=$http_proxy
-// 
-// 
-//     # Chain Files
-//     CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
-//     CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
-// 
-//     # Reference Assemblies
-//     REF1='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/latest/hg19.fa.gz'
-//     REF2='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz'
-// 
-//     """
-// 
-//     stub:
-//     """
-//     touch hg19ToHg38.over.chain.gz hg38ToHg19.over.chain.gz hg19.fa hg38.fa.gz
-//     """
-// 
-// }
+// Get chain files and reference sequences necessary for liftover
+process GET_LIFTOVER_FILES {
+    
+    cache true
+    tag 'single_execution'
+
+    input:
+    path(bgzip_bin)
+
+    output:
+    tuple path('hg19.fa'),
+        path('hg38.fa'),
+        path('hg19ToHg38.over.chain.gz'),
+        path('hg38ToHg19.over.chain.gz')
+
+    script:
+    """
+    
+    # TODO: make this configuration globally
+    export http_proxy="http://proxy.charite.de:8080"
+    export https_proxy=\$http_proxy
+    export HTTPS_PROXY=\$http_proxy
+    export HTTP_PROXY=\$http_proxy
+
+    # Chain Files
+    CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
+    CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
+    wget \$CHAIN1
+    wget \$CHAIN2
+
+    # Reference Assemblies
+    REF1='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/latest/hg19.fa.gz'
+    REF2='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz'
+
+    # Unzip the reference sequences and remove the the 
+    ./\$BGZIP -d  \$(echo "\${REF1##*/}")
+    ./\$BGZIP -d  \$(echo "\${REF2##*/}")
+    """
+
+    stub:
+    """
+    touch hg19ToHg38.over.chain.gz hg38ToHg19.over.chain.gz hg19.fa hg38.fa
+    """
+
+}
 
 
 // process LIFTOVER_SUMSTATS {
 // 
 // }
+// 
 // TODO: Write dedicated liftover process using bcftools
 
