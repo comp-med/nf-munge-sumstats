@@ -155,7 +155,7 @@ process FORMAT_SUMSTATS {
 
     stub:
     """
-    touch formatted_sumstats_${genome_build}.vcf
+    touch "formatted_sumstats_${genome_build}.vcf"
     """
 
 }
@@ -197,8 +197,8 @@ process SORT_GZIP_INDEX {
 
     stub:
     """
-    touch formatted_sumstats_${genome_build}.vcf.gz
-    touch formatted_sumstats_${genome_build}.vcf.gz.tbi
+    touch "formatted_sumstats_${genome_build}.vcf.gz"
+    touch "formatted_sumstats_${genome_build}.vcf.gz.tbi"
     """
   
 }
