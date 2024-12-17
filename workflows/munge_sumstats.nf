@@ -3,6 +3,7 @@ include {
     FORMAT_SUMSTATS;
     SORT_GZIP_INDEX;
     GET_LIFTOVER_FILES;
+    LIFTOVER_SUMSTATS;
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -34,15 +35,21 @@ workflow MUNGE_SUMSTATS {
         formatted_files_ch
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)
-    ).view()
+    )
 
+    // Liftover required chain files and reference sequences. 
+    // These are downloaded in this process
     def liftover_files_ch = GET_LIFTOVER_FILES (
         bgzip_bin
     )
 
-    //def liftover_ch = LIFTOVER_SUMSTATS (
-        // TODO
-    //)
+    def liftover_ch = LIFTOVER_SUMSTATS (
+        indexed_files_ch
+            .combine(liftover_files_ch)
+            .combine(bcftools_liftover_bin)
+            .combine(bgzip_bin)
+
+    )
 
     // TODO: Join formatted files in both genome builds as output
     // output formatted data directly, then output liftover files

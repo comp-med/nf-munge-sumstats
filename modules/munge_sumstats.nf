@@ -138,6 +138,10 @@ process FORMAT_SUMSTATS {
     # Output is saved in list when logging is active!
     sumstats <- sumstats\$sumstats 
     
+    # FIX BAD COLUMNS ----
+    # This is contained in the HERMES summary statistics
+    sumstats\$`#KEY` <- NULL
+
     # CLEANUP ----
     # This is annoying but there's no way around it.
     file.remove(formatted_sumstats_file)
@@ -248,10 +252,96 @@ process GET_LIFTOVER_FILES {
 
 }
 
+// Liftover summary statistics from given assembly to the other one
+process LIFTOVER_SUMSTATS {
+    def get_other_genome_build(genome_build) {
+        if( genome_build == "grch37") {
+            return "grch38"
+        } else  {
+            return "grch37"
+        }
+    }
+    def other_genome_build = get_other_genome_build("$genome_build")
 
-// process LIFTOVER_SUMSTATS {
-// 
-// }
-// 
+
+    cache true
+    tag "$phenotype_name: $genome_build -> ..."
+
+    input:
+    tuple 
+        val(phenotype_name),
+        val(genome_build),
+        path(formatted_sumstats),
+        path(formatted_sumstats_index),
+        path(hg19_reference),
+        path(hg38_reference),
+        path(hg19_to_38_chain_file),
+        path(hg38_to_19_chain_file),
+        path(bcftools_liftover_bin),
+        path(bgzip_bin)
+
+    output:
+    tuple
+        val(phenotype_name),
+        path(formatted_sumstats),
+        path(formatted_sumstats_index),
+        path("formatted_sumstats_${other_genome_build}.vcf.gz"),
+        path("formatted_sumstats_${other_genome_build}.vcf.gz.tbi")
+
+
+    script:
+    """
+    # BINARIES ----
+    # ...
+
+    # INPUT FILES ----
+    HG19_REF="$hg19_reference"
+    HG38_REF="$hg38_reference"
+    HG19_TO_HG38_CHAIN="$hg19_to_38_chain_file"
+    HG38_TO_HG18_CHAIN="$hg38_to_19_chain_file"
+    INPUT_VCF="$formatted_sumstats"
+    OUTPUT_VCF="formatted_sumstats_${other_genome_build}.vcf.gz"
+
+
+    # Create a collapsed VCF and check REF/ALT alignment in the process
+    ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
+    --check-ref ws \
+    -f \$REF_HG19 \
+    -o \$OUTPUT_VCF
+
+    # Check Allele mismatches etc
+    ./bcftools +fixref \$INPUT_VCF -- -f \$REF_HG19
+
+    # Liftover
+    ./bcftools +liftover --no-version \$INPUT_VCF -Ou -o \$OUTPUT_VCF -- \
+    -s \$GENOME_SRC \
+    -f \$GENOME_DST \
+    -c \$CHAIN_FILE  \
+    --reject ukb_liftover_sites_reject.vcf.bgz \
+    --reject-type z \
+    --write-src
+
+    # Check the file using bcftools
+    ./bcftools +af-dist \$OUTPUT_VCF
+    ./bcftools +fixref \$OUTPUT_VCF -- -f \$REF_HG38
+    ./bcftools stats OUTPUT_VCF
+
+    # Sort, expand, index and save
+    ./bcftools  sort -Oz \$INPUT_VCF | \
+    ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
+
+    # create index
+    ./bcftools index --tbi \$INPUT_VCF
+
+    """
+    
+    stub:
+    """
+    touch "formatted_sumstats_${other_genome_build}.vcf.gz"
+    touch "formatted_sumstats_${other_genome_build}.vcf.gz.tbi"
+    """
+
+}
+
 // TODO: Write dedicated liftover process using bcftools
 
