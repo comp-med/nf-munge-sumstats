@@ -83,7 +83,10 @@ process FORMAT_SUMSTATS {
 
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
-    genome_build <- "$genome_build"
+    genome_build <- trimws("$genome_build")
+    stopifnot(genome_build %in% c("grch37", "grch38"))
+    genome_build <- ifelse(genome_build == "grch37", "GRCh37", "GRCH38")
+
     raw_sumstat_file <- "$raw_sumstat_file"
     formatted_sumstats_file <- paste0(
         "formatted_sumstats_", 
