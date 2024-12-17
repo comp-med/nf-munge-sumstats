@@ -92,6 +92,6 @@ process CHECK_INPUT_COL_HEADERS {
 
     stub:
     """
-    touch sumstatColHeaders.csv
+    touch sumstatsColHeaders.csv
     """
 }
