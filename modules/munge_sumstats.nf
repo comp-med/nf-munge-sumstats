@@ -254,15 +254,6 @@ process GET_LIFTOVER_FILES {
 
 // Liftover summary statistics from given assembly to the other one
 process LIFTOVER_SUMSTATS {
-    def get_other_genome_build(genome_build) {
-        if( genome_build == "grch37") {
-            return "grch38"
-        } else  {
-            return "grch37"
-        }
-    }
-    def other_genome_build = get_other_genome_build("$genome_build")
-
 
     cache true
     tag "$phenotype_name: $genome_build -> ..."
@@ -290,6 +281,14 @@ process LIFTOVER_SUMSTATS {
 
 
     script:
+    def get_other_genome_build(genome_build) {
+        if( genome_build == "grch37") {
+            return "grch38"
+        } else  {
+            return "grch37"
+        }
+    }
+    def other_genome_build = get_other_genome_build("$genome_build")
     """
     # BINARIES ----
     # ...
