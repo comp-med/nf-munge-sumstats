@@ -259,8 +259,7 @@ process LIFTOVER_SUMSTATS {
     tag "$phenotype_name: $genome_build -> ..."
 
     input:
-    tuple 
-        val(phenotype_name),
+    tuple val(phenotype_name),
         val(genome_build),
         path(formatted_sumstats),
         path(formatted_sumstats_index),
@@ -272,8 +271,7 @@ process LIFTOVER_SUMSTATS {
         path(bgzip_bin)
 
     output:
-    tuple
-        val(phenotype_name),
+    tuple val(phenotype_name),
         path(formatted_sumstats),
         path(formatted_sumstats_index),
         path("formatted_sumstats_${other_genome_build}.vcf.gz"),
