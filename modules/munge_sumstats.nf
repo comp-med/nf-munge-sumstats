@@ -60,6 +60,7 @@ process FORMAT_SUMSTATS {
     input:
     tuple val(phenotype_name),
         val(genome_build),
+        val(other_genome_build),
         path(raw_sumstat_file), 
         path(custom_col_headers),
         path(r_lib)
@@ -67,16 +68,10 @@ process FORMAT_SUMSTATS {
     output:
     tuple val(phenotype_name),
         val(genome_build),
-        val("$other_genome_build"),
+        val(other_genome_build),
         path("formatted_sumstats_${genome_build}.vcf")
 
     script:
-    def other_genome_build
-    if( genome_build == "grch37") {
-        other_genome_build = "grch38"
-    } else  {
-        other_genome_build = "grch37"
-    }
     """
     #! /usr/bin/env Rscript
     

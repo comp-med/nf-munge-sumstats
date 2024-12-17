@@ -24,7 +24,10 @@ workflow MUNGE_SUMSTATS {
         tup[0],
         file(tup[1]).text.replaceAll("\\s",""), 
         tup[2]
-    ]}.map {
+    ]}
+
+    // Define other genome build to be used later for liftover
+    input_files_ch= input_files_ch.map {
         tup -> [
             tup[0],
             tup[1],
