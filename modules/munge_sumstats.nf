@@ -256,7 +256,7 @@ process GET_LIFTOVER_FILES {
 process LIFTOVER_SUMSTATS {
 
     cache true
-    tag "$phenotype_name: $genome_build -> ..."
+    tag "$phenotype_name: from $genome_build -> ..."
 
     input:
     tuple val(phenotype_name),
@@ -272,21 +272,20 @@ process LIFTOVER_SUMSTATS {
 
     output:
     tuple val(phenotype_name),
-        path(formatted_sumstats),
-        path(formatted_sumstats_index),
-        path("formatted_sumstats_${other_genome_build}.vcf.gz"),
-        path("formatted_sumstats_${other_genome_build}.vcf.gz.tbi")
-
+        path("formatted_sumstats_grch37.vcf.gz"),
+        path("formatted_sumstats_grch37.vcf.gz.tbi")
+        path("formatted_sumstats_grch38.vcf.gz"),
+        path("formatted_sumstats_grch38.vcf.gz.tbi")
 
     script:
-    def get_other_genome_build(genome_build) {
-        if( genome_build == "grch37") {
-            return "grch38"
-        } else  {
-            return "grch37"
-        }
-    }
-    def other_genome_build = get_other_genome_build("$genome_build")
+    // def get_other_genome_build(genome_build) {
+    //     if( genome_build == "grch37") {
+    //         return "grch38"
+    //     } else  {
+    //         return "grch37"
+    //     }
+    // }
+    // def other_genome_build = get_other_genome_build("$genome_build")
     """
     # BINARIES ----
     # ...
@@ -296,9 +295,15 @@ process LIFTOVER_SUMSTATS {
     HG38_REF="$hg38_reference"
     HG19_TO_HG38_CHAIN="$hg19_to_38_chain_file"
     HG38_TO_HG18_CHAIN="$hg38_to_19_chain_file"
+    FROM_GENOME_BUILD="$genome_build"
+    TO_GENOME_BUILD
+    if [ "\$FROM_GENOME_BUILD" == "grch37" ]; then
+        TO_GENOME_BUILD="grch38"
+    else
+        TO_GENOME_BUILD="grch37"
+    fi
     INPUT_VCF="$formatted_sumstats"
-    OUTPUT_VCF="formatted_sumstats_${other_genome_build}.vcf.gz"
-
+    OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
     # Create a collapsed VCF and check REF/ALT alignment in the process
     ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
