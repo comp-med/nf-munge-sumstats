@@ -188,18 +188,16 @@ process SORT_GZIP_INDEX {
 
     script:
     """
-    BCFTOOLS="$bcftools_liftover_bin"
-    BGZIP="$bgzip_bin"
     INPUT_VCF="$formatted_sumstat_file"
 
     # Sort the file (to be sure)
-    ./\$BCFTOOLS sort \$INPUT_VCF -o \$INPUT_VCF
+    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF
 
     # BGZip the file
-    ./\$BGZIP \$INPUT_VCF
+    ./bgzip \$INPUT_VCF
 
     # Index the file
-    ./\$BCFTOOLS index --tbi \${INPUT_VCF}.gz
+    ./bcftools index --tbi \${INPUT_VCF}.gz
     """
 
     stub:
@@ -245,8 +243,8 @@ process GET_LIFTOVER_FILES {
     REF2='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz'
 
     # Unzip the reference sequences and remove the the 
-    ./\$BGZIP -d  \$(echo "\${REF1##*/}")
-    ./\$BGZIP -d  \$(echo "\${REF2##*/}")
+    ./bgzip -d  \$(echo "\${REF1##*/}")
+    ./bgzip -d  \$(echo "\${REF2##*/}")
     """
 
     stub:
