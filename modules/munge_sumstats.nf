@@ -273,7 +273,7 @@ process LIFTOVER_SUMSTATS {
     output:
     tuple val(phenotype_name),
         path("formatted_sumstats_grch37.vcf.gz"),
-        path("formatted_sumstats_grch37.vcf.gz.tbi")
+        path("formatted_sumstats_grch37.vcf.gz.tbi"),
         path("formatted_sumstats_grch38.vcf.gz"),
         path("formatted_sumstats_grch38.vcf.gz.tbi")
 
@@ -339,8 +339,10 @@ process LIFTOVER_SUMSTATS {
     
     stub:
     """
-    touch "formatted_sumstats_${other_genome_build}.vcf.gz"
-    touch "formatted_sumstats_${other_genome_build}.vcf.gz.tbi"
+    touch "formatted_sumstats_grch37.vcf.gz"
+    touch "formatted_sumstats_grch37.vcf.gz.tbi"
+    touch "formatted_sumstats_grch38.vcf.gz"
+    touch "formatted_sumstats_grch38.vcf.gz.tbi"
     """
 
 }
