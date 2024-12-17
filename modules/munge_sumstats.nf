@@ -173,7 +173,7 @@ process SORT_GZIP_INDEX {
     output:
     tuple val(phenotype_name),
         val(genome_build),
-        path("formatted_sumstats_${genome_build}.vcf.gz")
+        path("formatted_sumstats_${genome_build}.vcf.gz"),
         path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
 
     script:
