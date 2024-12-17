@@ -67,7 +67,7 @@ process FORMAT_SUMSTATS {
     output:
     tuple val(phenotype_name),
         val(genome_build),
-        val(other_genome_build),
+        val("$other_genome_build"),
         path("formatted_sumstats_${genome_build}.vcf")
 
     script:
@@ -187,6 +187,7 @@ process SORT_GZIP_INDEX {
     output:
     tuple val(phenotype_name),
         val(genome_build),
+        val(other_genome_build),
         path("formatted_sumstats_${genome_build}.vcf.gz"),
         path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
 
