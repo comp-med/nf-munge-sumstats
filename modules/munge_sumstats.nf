@@ -67,9 +67,16 @@ process FORMAT_SUMSTATS {
     output:
     tuple val(phenotype_name),
         val(genome_build),
+        val(other_genome_build),
         path("formatted_sumstats_${genome_build}.vcf")
 
     script:
+    def other_genome_build
+    if( genome_build == "grch37") {
+        other_genome_build = "grch38"
+    } else  {
+        other_genome_build = "grch37"
+    }
     """
     #! /usr/bin/env Rscript
     
@@ -172,6 +179,7 @@ process SORT_GZIP_INDEX {
     input:
     tuple val(phenotype_name),
         val(genome_build),
+        val(other_genome_build),
         path(formatted_sumstat_file), 
         path(bcftools_liftover_bin),
         path(bgzip_bin)
@@ -256,11 +264,12 @@ process GET_LIFTOVER_FILES {
 process LIFTOVER_SUMSTATS {
 
     cache true
-    tag "$phenotype_name: from $genome_build -> ..."
+    tag "$phenotype_name: from $genome_build -> $other_genome_build"
 
     input:
     tuple val(phenotype_name),
         val(genome_build),
+        val(other_genome_build),
         path(formatted_sumstats),
         path(formatted_sumstats_index),
         path(hg19_reference),
@@ -278,14 +287,6 @@ process LIFTOVER_SUMSTATS {
         path("formatted_sumstats_grch38.vcf.gz.tbi")
 
     script:
-    // def get_other_genome_build(genome_build) {
-    //     if( genome_build == "grch37") {
-    //         return "grch38"
-    //     } else  {
-    //         return "grch37"
-    //     }
-    // }
-    // def other_genome_build = get_other_genome_build("$genome_build")
     """
     # BINARIES ----
     # ...
@@ -296,12 +297,7 @@ process LIFTOVER_SUMSTATS {
     HG19_TO_HG38_CHAIN="$hg19_to_38_chain_file"
     HG38_TO_HG18_CHAIN="$hg38_to_19_chain_file"
     FROM_GENOME_BUILD="$genome_build"
-    TO_GENOME_BUILD
-    if [ "\$FROM_GENOME_BUILD" == "grch37" ]; then
-        TO_GENOME_BUILD="grch38"
-    else
-        TO_GENOME_BUILD="grch37"
-    fi
+    TO_GENOME_BUILD="$other_genome_build"
     INPUT_VCF="$formatted_sumstats"
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
