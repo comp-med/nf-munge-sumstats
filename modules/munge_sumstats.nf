@@ -241,6 +241,8 @@ process GET_LIFTOVER_FILES {
     # Reference Assemblies
     REF1='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/latest/hg19.fa.gz'
     REF2='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz'
+    wget \$REF1
+    wget \$REF2
 
     # Unzip the reference sequences and remove the the 
     ./bgzip -d  \$(echo "\${REF1##*/}")
