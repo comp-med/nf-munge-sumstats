@@ -85,7 +85,6 @@ process FORMAT_SUMSTATS {
     phenotype_name <- "$phenotype_name"
     genome_build <- trimws("$genome_build")
     stopifnot(genome_build %in% c("grch37", "grch38"))
-    genome_build <- ifelse(genome_build == "grch37", "GRCh37", "GRCH38")
 
     raw_sumstat_file <- "$raw_sumstat_file"
     formatted_sumstats_file <- paste0(
@@ -123,7 +122,7 @@ process FORMAT_SUMSTATS {
         bi_allelic_filter = FALSE,
         flip_frq_as_biallelic = TRUE,
         
-        ref_genome = genome_build, 
+        ref_genome = ifelse(genome_build == "grch37", "GRCh37", "GRCH38"), 
         on_ref_genome = TRUE, 
         convert_ref_genome = NULL,
         
@@ -203,32 +202,40 @@ process SORT_GZIP_INDEX {
   
 }
 
-// process GET_LIFTOVER_FILES {
-//     
-//     cache true
-//     tag "single_execution"
-// 
-//     input:
-// 
-//     output:
-//     tuple
-//         path(),
-//         path(),
-//         path(),
-//         path(),
-// 
-//     script:
-//     """
-//     # Chain Files
-//     https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz
-//     https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
-//     """
-// 
-//     stub:
-//     """
-//     """
-// 
-// }
+process GET_LIFTOVER_FILES {
+    
+    cache true
+    tag "single_execution"
+
+    output:
+    tuple
+        path(),
+        path(),
+        path("hg19ToHg38.over.chain.gz"),
+        path("hg38ToHg19.over.chain.gz"),
+
+    script:
+    """
+    
+    # TODO: make this configuration globally
+    export http_proxy="http://proxy.charite.de:8080"
+    export https_proxy=$http_proxy
+    export HTTPS_PROXY=$http_proxy
+    export HTTP_PROXY=$http_proxy
+
+
+    # Chain Files
+    CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
+    CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
+
+
+    """
+
+    stub:
+    """
+    """
+
+}
 
 
 // process LIFTOVER_SUMSTATS {
