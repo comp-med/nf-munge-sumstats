@@ -1,6 +1,7 @@
 include {
     GET_GENOME_BUILD;
-    FORMAT_SUMSTATS
+    FORMAT_SUMSTATS;
+    SORT_GZIP_INDEX
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -8,8 +9,8 @@ workflow MUNGE_SUMSTATS {
     take: 
     input_files_ch
     custom_col_headers
-    r_lib,
-    bcftools_liftover_bin,
+    r_lib
+    bcftools_liftover_bin
     bgzip_bin
 
     main:
@@ -21,14 +22,14 @@ workflow MUNGE_SUMSTATS {
     }
 
     // Format files in their current genome build
-    def formatted_file_ch = FORMAT_SUMSTATS (
+    def formatted_files_ch = FORMAT_SUMSTATS (
         input_files_ch
             .combine(custom_col_headers)
             .combine(r_lib)
     )
 
     // Before liftover, files need to be gzipped and indexed
-    def indexed_file_ch = SORT_GZIP_INDEX (
+    def indexed_files_ch = SORT_GZIP_INDEX (
         formatted_files_ch
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)
