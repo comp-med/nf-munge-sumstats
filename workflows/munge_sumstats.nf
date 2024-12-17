@@ -24,14 +24,14 @@ workflow MUNGE_SUMSTATS {
     }
 
     // Format files in their current genome build
-    def formatted_files_ch = FORMAT_SUMSTATS (
+    formatted_files_ch = FORMAT_SUMSTATS (
         input_files_ch
             .combine(custom_col_headers)
             .combine(r_lib)
     )
 
     // Before liftover, files need to be gzipped and indexed
-    def indexed_files_ch = SORT_GZIP_INDEX (
+    indexed_files_ch = SORT_GZIP_INDEX (
         formatted_files_ch
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)
@@ -39,11 +39,11 @@ workflow MUNGE_SUMSTATS {
 
     // Liftover required chain files and reference sequences. 
     // These are downloaded in this process
-    def liftover_files_ch = GET_LIFTOVER_FILES (
+    liftover_files_ch = GET_LIFTOVER_FILES (
         bgzip_bin
     )
 
-    def liftover_ch = LIFTOVER_SUMSTATS (
+    liftover_ch = LIFTOVER_SUMSTATS (
         indexed_files_ch
             .combine(liftover_files_ch)
             .combine(bcftools_liftover_bin)
