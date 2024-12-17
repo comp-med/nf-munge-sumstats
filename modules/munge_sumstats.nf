@@ -260,7 +260,7 @@ process GET_LIFTOVER_FILES {
 process LIFTOVER_SUMSTATS {
 
     cache true
-    tag "$phenotype_name: from $genome_build -> $other_genome_build"
+    tag "$phenotype_name: $genome_build -> $other_genome_build"
 
     input:
     tuple val(phenotype_name),
@@ -297,36 +297,48 @@ process LIFTOVER_SUMSTATS {
     INPUT_VCF="$formatted_sumstats"
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
+    # LIFTOVER DIRECTION ----
+
+    if [ "\$FROM_GENOME_BUILD" == "grch37" ]; then
+        CHAIN=\$HG19_TO_HG38_CHAIN
+        SOURCE_REF=\$HG19_REF
+        TARGET_REF=\$HG38_REF
+    else
+        CHAIN=\$HG38_TO_HG19_CHAIN
+        SOURCE_REF=\$HG38_REF
+        TARGET_REF=\$HG19_REF    
+    fi
+
     # Create a collapsed VCF and check REF/ALT alignment in the process
     ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
     --check-ref ws \
-    -f \$REF_HG19 \
-    -o \$OUTPUT_VCF
+    -f \$SOURCE_REF \
+    -o \${INPUT_VCF}_COLLAPSED
 
     # Check Allele mismatches etc
-    ./bcftools +fixref \$INPUT_VCF -- -f \$REF_HG19
+    ./bcftools +fixref \${INPUT_VCF}_COLLAPSED -- -f \$SOURCE_REF
 
     # Liftover
-    ./bcftools +liftover --no-version \$INPUT_VCF -Ou -o \$OUTPUT_VCF -- \
-    -s \$GENOME_SRC \
-    -f \$GENOME_DST \
-    -c \$CHAIN_FILE  \
-    --reject ukb_liftover_sites_reject.vcf.bgz \
+    ./bcftools +liftover --no-version \${INPUT_VCF}_COLLAPSED -Ou -o \${OUTPUT_VCF}_COLLAPSED -- \
+    -s \$SOURCE_REF \
+    -f \$TARGET_REF \
+    -c \$CHAIN  \
+    --reject reject.vcf.bgz \
     --reject-type z \
     --write-src
 
     # Check the file using bcftools
-    ./bcftools +af-dist \$OUTPUT_VCF
-    ./bcftools +fixref \$OUTPUT_VCF -- -f \$REF_HG38
-    ./bcftools stats OUTPUT_VCF
+    ./bcftools +af-dist \${OUTPUT_VCF}_COLLAPSED
+    ./bcftools +fixref \${OUTPUT_VCF}_COLLAPSED -- -f \$TARGET_REF
+    ./bcftools stats \${OUTPUT_VCF}_COLLAPSED
 
     # Sort, expand, index and save
-    ./bcftools  sort -Oz \$INPUT_VCF | \
+    ./bcftools  sort -Oz \${OUTPUT_VCF}_COLLAPSED | \
     ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
 
     # create index
     ./bcftools index --tbi \$INPUT_VCF
-
+    ./bcftools index --tbi \$OUTPUT_VCF
     """
     
     stub:
