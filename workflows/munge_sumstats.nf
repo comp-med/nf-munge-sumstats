@@ -18,7 +18,7 @@ workflow MUNGE_SUMSTATS {
     input_files_ch = GET_GENOME_BUILD (
         input_files_ch.combine(r_lib) 
     ).map {
-        tup -> [tup[0], file(tup[1]).text, tup[2]]
+        tup -> [tup[0], file(tup[1]).text.replaceAll("\\s",""), tup[2]]
     }
 
     // Format files in their current genome build
