@@ -291,7 +291,7 @@ process LIFTOVER_SUMSTATS {
     HG19_REF="$hg19_reference"
     HG38_REF="$hg38_reference"
     HG19_TO_HG38_CHAIN="$hg19_to_38_chain_file"
-    HG38_TO_HG18_CHAIN="$hg38_to_19_chain_file"
+    HG38_TO_HG19_CHAIN="$hg38_to_19_chain_file"
     FROM_GENOME_BUILD="$genome_build"
     TO_GENOME_BUILD="$other_genome_build"
     INPUT_VCF="$formatted_sumstats"
@@ -337,8 +337,8 @@ process LIFTOVER_SUMSTATS {
     ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
 
     # create index
-    ./bcftools index --tbi \$INPUT_VCF
-    ./bcftools index --tbi \$OUTPUT_VCF
+    ./bcftools index -f --tbi \$INPUT_VCF
+    ./bcftools index -f --tbi \$OUTPUT_VCF
     """
     
     stub:
