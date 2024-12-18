@@ -438,8 +438,8 @@ process SAVE_PARQUET {
         add_sample_names = FALSE, 
         add_rowranges = FALSE
       )
-      id_split <- tstrsplit(sumstats$ID, r"{:|_|/}")
-      sumstats$ID <- NULL
+      id_split <- tstrsplit(sumstats\$ID, r"{:|_|/}")
+      sumstats\$ID <- NULL
       sumstats[, `:=`(
         CHR_UCSC = id_split[[1]],
         CHR_ENSEMBL = gsub("^chr", "", id_split[[1]]),
