@@ -38,36 +38,6 @@ def helpMessage() {
 """.stripIndent()
 }
 
-// PLAN -----------------------------------------------------------------------
-
-/*
-
-* Parse input table - what do I need as input information?
-* Download data
-* Run it through munge sumstats
-* Liftover
-
-* Automate GWAS Catalog and openGWAS downloads
-* For everything else, have download link ready
-* Distinguish between VCF and regular table
-* Save VCF as tsv.gz in separate step
-
-Steps:
-
-1. Compile Data
- - Define mandatory input columns: phenotype_name, download_source [gwas_catalog, open_gwas, other], download_link, local File [T, F], file_location
-2. Download Data
- - Split by download type, skip locally available data
-3. Prepare harmonization 
- - create custom `sumstatsColHeaders` (How to output unmatched colnames?)
- - Get genome build for each file irrespective of annotation, which can be wrong
- - 
-3. Harmonize Data (Both Genome Builds)
-
-Support: GBMI, Zenodo
-
-*/
-
 // WORKFLOWS ------------------------------------------------------------------
 
 include { DOWNLOAD_DATA } from './workflows/download_data.nf'
@@ -105,10 +75,6 @@ workflow {
       bcftools_liftover_bin,
       bgzip_bin
   )
-  // Check integrity of files somehow?
-  // DEBUG output
-  // input_files_ch.view()
-
 }
 
 // SUMMARY --------------------------------------------------------------------
