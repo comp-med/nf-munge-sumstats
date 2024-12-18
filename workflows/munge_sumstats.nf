@@ -4,6 +4,7 @@ include {
     SORT_GZIP_INDEX;
     GET_LIFTOVER_FILES;
     LIFTOVER_SUMSTATS;
+    SAVE_PARQUET;
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -55,7 +56,9 @@ workflow MUNGE_SUMSTATS {
     liftover_files_ch = GET_LIFTOVER_FILES (
         bgzip_bin
     )
-
+    
+    // Liftover formatted summary statistics from one genome build into the other
+    // so either grch37 -> grch38 or the other way around
     liftover_ch = LIFTOVER_SUMSTATS (
         indexed_files_ch
             .combine(liftover_files_ch)
@@ -63,9 +66,14 @@ workflow MUNGE_SUMSTATS {
             .combine(bgzip_bin)
 
     )
-
-    // TODO: Join formatted files in both genome builds as output
-    // output formatted data directly, then output liftover files
+    
+    // Having the files available in a tabular format makes it more convenient
+    // Therefore, saving everything in parquet makes sense
+    SAVE_PARQUET (
+        liftover_ch
+            .combine(r_lib)
+    )
 
     // emit:
+    // formatted_data = liftover_ch.out
 }

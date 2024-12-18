@@ -68,7 +68,7 @@ workflow {
   def custom_col_headers = SETUP_MUNGING.out.custom_col_headers
 
   // Main workflow: format and liftover summary statistics
-  MUNGE_SUMSTATS(
+  def munged_sumstats_ch = MUNGE_SUMSTATS(
       input_files_ch,
       custom_col_headers,
       r_lib,

@@ -86,10 +86,10 @@ configured in `nextflow.config`.
 * External binaries
     * [`lftp`](https://lftp.yar.ru/)
     * [`bgzip`](https://www.htslib.org/doc/bgzip.html)
-    * [`bcftools`](https://samtools.github.io/bcftools/bcftools.html) with the [`liftover` plugin](https://github.com/freeseek/score/?tab=readme-ov-file#liftover-vcfs) installed
+    * [`bcftools`](https://samtools.github.io/bcftools/bcftools.html) with the [`liftover`](https://github.com/freeseek/score/?tab=readme-ov-file#liftover-vcfs) plugin installed
 * R packages: 
     * From GitHub: [gwascatftp](https://github.com/comp-med/gwascatftp), [MungeSumstats](https://github.com/Al-Murphy/MungeSumstats)
-    * From CRAN: `data.table`, `fs`
+    * From CRAN: `data.table`, `fs`, `arrow`
     * From Bioconductor: `GenomicFiles`, `VariantAnnotation`, `GenomeInfoDb`
 
 ## Gettings Started
@@ -106,7 +106,7 @@ input_table <- data.table(
     data_link = NA_character_,
     data_location = NA_character_
 )
-fwrite(input_table, "<PATH/TO/>input_table.csv", sep = ",")
+fwrite(input_table, "</PATH/TO/>input_table.csv", sep = ",")
 ```
 
 Make sure to add all the required parameters and path to the input table in
@@ -164,12 +164,13 @@ to manually adjust the code in this step to make it run successfully.
 
 ##  TODO
 
+* Create a pipeline for only downloading files and use that output as input for this one
 * Make more setting for `MungeSumstats` user-facing
 * Externalize the currently internal proxy settings
 * Look for `TODO`s in the code!
 * Make propagating meta data more ergonomic
 * Add support for downloading files from Zenodo (& GBMI?)
-* Save files as gzipped TSV instead of VCF
+* Save files as parquet file instead of VCF
 * More fine-grained resource allocation
 * Add nf-test
 * Add support for more reporting

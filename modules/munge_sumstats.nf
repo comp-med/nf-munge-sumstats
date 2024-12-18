@@ -363,5 +363,130 @@ process LIFTOVER_SUMSTATS {
 
 }
 
-// TODO: Write dedicated liftover process using bcftools
+// To make downstream processing easier, save as tabular parquet
+process SAVE_PARQUET {
 
+    cache true
+    tag "$phenotype_name"
+    label 'rProcess'
+    publishDir = [
+        [
+            path: { "${params.outDir}/${phenotype_name}/grch37/" },
+            mode: 'copy',
+            pattern: "formatted_sumstats_grch37.parquet"
+        ],
+        [
+            path: { "${params.outDir}/${phenotype_name}/grch38/" },
+            mode: 'copy',
+            pattern: "formatted_sumstats_grch38.parquet"
+        ]
+    ]
+
+    input:
+    tuple val(phenotype_name),
+        path(formatted_sumstats_grch37),
+        path(formatted_sumstats_grch37_index),
+        path(formatted_sumstats_grch38),
+        path(formatted_sumstats_grch38_index),
+        path(r_lib)
+
+    output:
+    tuple val(phenotype_name),
+        path("formatted_sumstats_grch37.parquet"),
+        path("formatted_sumstats_grch38.parquet")
+
+
+    script:
+    """
+    #! /usr/bin/env Rscript
+
+    # SETUP ----
+
+    r_lib <- "$r_lib"
+    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("arrow", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("VariantAnnotation", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("fs", lib.loc = r_lib))
+
+    # INPUT ----
+
+    sumstats_grch37_file <- "$formatted_sumstats_grch37"
+    sumstats_grch38_file <- "$formatted_sumstats_grch38"
+
+    # CONVERT & ANNOTATE ----
+
+    sumstats_files <- c(
+      sumstats_grch37_file, 
+      sumstats_grch38_file
+    )
+
+    for (i in seq_along(sumstats_files)) {
+      
+      parquet_file_name <- fs::path_ext_set(
+        fs::path_ext_remove(
+          fs::path_ext_remove(
+            fs::path_file(
+              sumstats_files[i]
+            )
+          )
+        ), "parquet"
+      )
+      
+      sumstats <- VariantAnnotation::readVcf(sumstats_files[i])
+      sumstats <- MungeSumstats:::vcf2df(
+        sumstats, 
+        add_sample_names = FALSE, 
+        add_rowranges = FALSE
+      )
+      id_split <- tstrsplit(sumstats$ID, r"{:|_|/}")
+      sumstats$ID <- NULL
+      sumstats[, `:=`(
+        CHR_UCSC = id_split[[1]],
+        CHR_ENSEMBL = gsub("^chr", "", id_split[[1]]),
+        A1 = id_split[[3]],
+        A2 = id_split[[4]],
+        BP = id_split[[2]]
+      )]
+      sumstats[, `:=`(
+        ID_UCSC = paste0(
+          CHR_UCSC,
+          ":",
+          BP,
+          "_",
+          pmin(id_split[[3]], id_split[[4]]), 
+          "_",
+          pmax(id_split[[3]], id_split[[4]])
+        ),
+        ID_ENSEMBL = paste0(
+          CHR_ENSEMBL, 
+          ":",
+          BP,
+          "_",
+          pmin(id_split[[3]], id_split[[4]]),
+          "_",
+          pmax(id_split[[3]], id_split[[4]])
+        )
+      )]
+      id_cols <- c(
+        "CHR_UCSC", "CHR_ENSEMBL", "BP", "END", "A1",
+        "A2", "ID_UCSC", "ID_ENSEMBL", "SNP"
+      )
+      remaining_cols <- setdiff(names(sumstats), id_cols)
+      data.table::setcolorder(sumstats, c(id_cols, remaining_cols))
+      
+      arrow::write_parquet(
+        sumstats,
+        parquet_file_name, 
+      )
+    }
+    # REFERENCE ----
+
+    # https://github.com/Bioconductor/VariantAnnotation/issues/57
+    """
+
+    stub:
+    """
+    touch formatted_sumstats_grch37.parquet formatted_sumstats_grch38.parquet
+    """
+
+}
