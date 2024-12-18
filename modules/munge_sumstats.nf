@@ -261,6 +261,18 @@ process LIFTOVER_SUMSTATS {
 
     cache true
     tag "$phenotype_name: $genome_build -> $other_genome_build"
+    publishDir = [
+        [
+            path: { "${params.outDir}/${phenotype_name}/grch37/" },
+            mode: 'copy',
+            pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}"
+        ],
+        [
+            path: { "${params.outDir}/${phenotype_name}/grch38/" },
+            mode: 'copy',
+            pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}"
+        ]
+    ]
 
     input:
     tuple val(phenotype_name),
