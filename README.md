@@ -16,6 +16,8 @@ The pipeline covers the following steps:
 3. Based on raw data reference genome alignment, liftover formatted file to the
    other reference genome (either GRCh37 or GRCh38) using
    [`bcftools\liftover`](https://academic.oup.com/bioinformatics/article/40/2/btae038/7585532)
+4. Save files as indexed VCF files as well as parquet tables
+
 
 ## Requirements
 
@@ -139,16 +141,20 @@ each line in `phenotype_id` of `params.input_table`.
 output/
 ├── phenotype_1
 │   ├── grch37
+│       ├── formatted_sumstats_grch37.parquet
 │   │   ├── formatted_sumstats_grch37.vcf.gz
 │   │   └── formatted_sumstats_grch37.vcf.gz.tbi
 │   └── grch38
+│       ├── formatted_sumstats_grch38.parquet
 │       ├── formatted_sumstats_grch38.vcf.gz
 │       └── formatted_sumstats_grch38.vcf.gz.tbi
 ├── phenotype_2
 │   ├── grch37
+│       ├── formatted_sumstats_grch37.parquet
 │   │   ├── formatted_sumstats_grch37.vcf.gz
 │   │   └── formatted_sumstats_grch37.vcf.gz.tbi
 │   └── grch38
+│       ├── formatted_sumstats_grch38.parquet
 │       ├── formatted_sumstats_grch38.vcf.gz
 │       └── formatted_sumstats_grch38.vcf.gz.tbi
 [...]
