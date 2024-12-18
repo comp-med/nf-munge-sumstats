@@ -2,19 +2,20 @@
 
 ## Introduction
 
-Nextflow Pipeline to streamline download and formatting of GWAS summary
-statistics. After formatting, the summary statistics
+This is a Nextflow Pipeline to streamline downloading, formatting and liftover
+of GWAS summary statistics into a harmonized format
+([GWAS-VCF](https://github.com/MRCIEU/gwas-vcf-specification)). 
 
 The pipeline covers the following steps:
 
-1. Work with local files or download from openGWAS, GWAS Catalog or an
-   arbitrary link
+1. Work with local files or download summary statistics from openGWAS, GWAS
+   Catalog or an arbitrary link
 2. Format summary statistics according to GWAS-VCF standard using the
    [`MungeSumstats`](https://academic.oup.com/bioinformatics/article/37/23/4593/6380562)
-R-package
+   R-package
 3. Based on raw data reference genome alignment, liftover formatted file to the
    other reference genome (either GRCh37 or GRCh38) using
-[`bcftools\liftover`](https://academic.oup.com/bioinformatics/article/40/2/btae038/7585532)
+   [`bcftools\liftover`](https://academic.oup.com/bioinformatics/article/40/2/btae038/7585532)
 
 ## Requirements
 
