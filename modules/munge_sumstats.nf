@@ -168,7 +168,7 @@ process FORMAT_SUMSTATS {
 // Indexing and zipping
 process SORT_GZIP {
 
-    cache true
+    cache 'lenient'
     tag "$phenotype_name"
 
     input:
@@ -301,6 +301,10 @@ process LIFTOVER_SUMSTATS {
     FROM_GENOME_BUILD="$genome_build"
     TO_GENOME_BUILD="$other_genome_build"
     INPUT_VCF="$formatted_sumstats"
+    
+    # Avoid modifying the input file to not re-trigger the process
+    # Setting cache to `lenient` would also do the trick, but maybe this is
+    # a little more clean
     cp \$INPUT_VCF input.vcf.gz
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
@@ -346,6 +350,8 @@ process LIFTOVER_SUMSTATS {
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
     ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o \${OUTPUT_VCF}_NO_INFO
+
+    # This is because bcftools does not modify in-place, apparently
     rm \$OUTPUT_VCF
     mv \${OUTPUT_VCF}_NO_INFO \$OUTPUT_VCF
 
