@@ -134,29 +134,39 @@ nextflow run main.nf -profile cluster
 ### Output
 
 By default, all output will be saved in the `./output` directory in the
-pipeline's base directory. Files will be saved in subdirectories named after
-each line in `phenotype_id` of `params.input_table`.
+pipeline's base directory. Raw summary statistic files can be found in the
+`./raw` subdirectory as symbolic links into the respective working directory,
+while formatted files will be copied into the `./formatted` sub-directory.
+Files for each phenotype will be saved in subdirectories named after each line
+in `phenotype_id` of `params.input_table`.
 
 ```bash
 output/
-├── phenotype_1
-│   ├── grch37
-│       ├── formatted_sumstats_grch37.parquet
-│   │   ├── formatted_sumstats_grch37.vcf.gz
-│   │   └── formatted_sumstats_grch37.vcf.gz.tbi
-│   └── grch38
-│       ├── formatted_sumstats_grch38.parquet
-│       ├── formatted_sumstats_grch38.vcf.gz
-│       └── formatted_sumstats_grch38.vcf.gz.tbi
-├── phenotype_2
-│   ├── grch37
-│       ├── formatted_sumstats_grch37.parquet
-│   │   ├── formatted_sumstats_grch37.vcf.gz
-│   │   └── formatted_sumstats_grch37.vcf.gz.tbi
-│   └── grch38
-│       ├── formatted_sumstats_grch38.parquet
-│       ├── formatted_sumstats_grch38.vcf.gz
-│       └── formatted_sumstats_grch38.vcf.gz.tbi
+├── formatted
+│   ├── phentype_1
+│   │   ├── grch37
+│   │   │   ├── formatted_sumstats_grch37.parquet
+│   │   │   ├── formatted_sumstats_grch37.vcf.gz
+│   │   │   └── formatted_sumstats_grch37.vcf.gz.tbi
+│   │   └── grch38
+│   │       ├── formatted_sumstats_grch38.parquet
+│   │       ├── formatted_sumstats_grch38.vcf.gz
+│   │       └── formatted_sumstats_grch38.vcf.gz.tbi
+│   ├── phenotype_2
+│   │   ├── grch37
+│   │   │   ├── formatted_sumstats_grch37.parquet
+│   │   │   ├── formatted_sumstats_grch37.vcf.gz
+│   │   │   └── formatted_sumstats_grch37.vcf.gz.tbi
+│   │   └── grch38
+│   │       ├── formatted_sumstats_grch38.parquet
+│   │       ├── formatted_sumstats_grch38.vcf.gz
+│   │       └── formatted_sumstats_grch38.vcf.gz.tbi
+[...]
+└── raw
+    ├── phentype_1
+    │   └── raw_sumstat_file.gz -> </SYMLINK/TO/WORK/DIR>/raw_sumstat_file.gz
+    ├── phenotype_2
+    │   └── raw_sumstat_file.vcf.gz -> </SYMLINK/TO/WORK/DIR>/raw_sumstat_file.vcf.gz
 [...]
 ```
 
@@ -176,8 +186,8 @@ to manually adjust the code in this step to make it run successfully.
 * Look for `TODO`s in the code!
 * Make propagating meta data more ergonomic
 * Add support for downloading files from Zenodo (& GBMI?)
-* Save files as parquet file instead of VCF
 * More fine-grained resource allocation
 * Add nf-test
 * Add support for more reporting
 * Add help text to command
+* Create nice output table with with phenotype & path
