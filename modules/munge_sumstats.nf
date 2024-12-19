@@ -217,7 +217,7 @@ process GET_LIFTOVER_FILES {
 process LIFTOVER_SUMSTATS {
 
     cache 'lenient'
-    tag "$phenotype_name: $genome_build -> $other_genome_build"
+    tag "$phenotype_name:$genome_build->$other_genome_build"
     publishDir = [
         [
             path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
@@ -252,9 +252,6 @@ process LIFTOVER_SUMSTATS {
 
     script:
     """
-    # BINARIES ----
-    # ...
-
     # INPUT FILES ----
     HG19_REF="$hg19_reference"
     HG38_REF="$hg38_reference"
