@@ -350,7 +350,7 @@ process LIFTOVER_SUMSTATS {
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO \$OUTPUT_VCF -o \${OUTPUT_VCF}_NO_INFO
+    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o \${OUTPUT_VCF}_NO_INFO
     rm \$OUTPUT_VCF
     mv \${OUTPUT_VCF}_NO_INFO \$OUTPUT_VCF
 
