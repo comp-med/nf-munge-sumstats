@@ -348,6 +348,16 @@ process LIFTOVER_SUMSTATS {
     ./bcftools  sort -Oz \${OUTPUT_VCF}_COLLAPSED | \
     ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
 
+    # INFO Column of output file contains content that his difficult
+    # to parse downstream. I'll remove it
+    ./bcftools annotate -x INFO \$OUTPUT_VCF -o \${OUTPUT_VCF}_NO_INFO
+    rm \$OUTPUT_VCF
+    mv \${OUTPUT_VCF}_NO_INFO \$OUTPUT_VCF
+
+    # Clean up
+    rm \${OUTPUT_VCF}_COLLAPSED
+    rm \${INPUT_VCF}_COLLAPSED
+
     # create index
     ./bcftools index -f --tbi \$INPUT_VCF
     ./bcftools index -f --tbi \$OUTPUT_VCF
