@@ -165,44 +165,6 @@ process FORMAT_SUMSTATS {
 
 }
 
-// Indexing and zipping
-process SORT_GZIP {
-
-    cache 'lenient'
-    tag "$phenotype_name"
-
-    input:
-    tuple val(phenotype_name),
-        val(genome_build),
-        val(other_genome_build),
-        path(formatted_sumstat_file), 
-        path(bcftools_liftover_bin),
-        path(bgzip_bin)
-        
-    output:
-    tuple val(phenotype_name),
-        val(genome_build),
-        val(other_genome_build),
-        path("formatted_sumstats_${genome_build}.vcf.gz")
-
-    script:
-    """
-    INPUT_VCF="$formatted_sumstat_file"
-
-    # Sort the file (to be sure)
-    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF
-
-    # BGZip the file
-    ./bgzip \$INPUT_VCF
-    """
-
-    stub:
-    """
-    touch "formatted_sumstats_${genome_build}.vcf.gz"
-    """
-  
-}
-
 // Get chain files and reference sequences necessary for liftover
 process GET_LIFTOVER_FILES {
     
@@ -301,12 +263,16 @@ process LIFTOVER_SUMSTATS {
     FROM_GENOME_BUILD="$genome_build"
     TO_GENOME_BUILD="$other_genome_build"
     INPUT_VCF="$formatted_sumstats"
-    
-    # Avoid modifying the input file to not re-trigger the process
-    # Setting cache to `lenient` would also do the trick, but maybe this is
-    # a little more clean
-    cp \$INPUT_VCF input.vcf.gz
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
+
+    # SORT & BGZIP INPUT ---- 
+
+    # Sort the file (to be sure)
+    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF
+
+    # BGZip the file
+    ./bgzip \$INPUT_VCF
+    INPUT_VCF="\${INPUT_VCF}.gz"
 
     # LIFTOVER DIRECTION ----
 
@@ -320,17 +286,23 @@ process LIFTOVER_SUMSTATS {
         TARGET_REF=\$HG19_REF    
     fi
 
+    # COLLAPSE VCF ----
+
     # Create a collapsed VCF and check REF/ALT alignment in the process
-    ./bcftools norm --no-version -Ou -m+ input.vcf.gz \
+    ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
     --check-ref ws \
     -f \$SOURCE_REF \
     -o input_COLLAPSED.vcf.gz
 
+    # FIX VCF REF ----
+
     # Check Allele mismatches etc
     ./bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF
 
+    # LIFTOVER ----
+
     # Liftover
-    ./bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o \${OUTPUT_VCF}_COLLAPSED -- \
+    ./bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o output_COLLAPSED.vcf.gz -- \
     -s \$SOURCE_REF \
     -f \$TARGET_REF \
     -c \$CHAIN  \
@@ -338,27 +310,28 @@ process LIFTOVER_SUMSTATS {
     --reject-type z \
     --write-src
 
+    # CHECKS ----
+
     # Check the file using bcftools
-    ./bcftools +af-dist \${OUTPUT_VCF}_COLLAPSED
-    ./bcftools +fixref \${OUTPUT_VCF}_COLLAPSED -- -f \$TARGET_REF
-    ./bcftools stats \${OUTPUT_VCF}_COLLAPSED
+    ./bcftools +af-dist \$output_COLLAPSED.vcf.gz
+    ./bcftools +fixref \$output_COLLAPSED.vcf.gz -- -f \$TARGET_REF
+    ./bcftools stats \$output_COLLAPSED.vcf.gz
 
     # Sort, expand, index and save
-    ./bcftools  sort -Oz \${OUTPUT_VCF}_COLLAPSED | \
+    ./bcftools  sort -Oz \$output_COLLAPSED.vcf.gz | \
     ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o \${OUTPUT_VCF}_NO_INFO
+    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o \$output_NO_INFO.vcf.gz
 
     # This is because bcftools does not modify in-place, apparently
     rm \$OUTPUT_VCF
-    mv \${OUTPUT_VCF}_NO_INFO \$OUTPUT_VCF
+    mv \$output_NO_INFO.vcf.gz \$OUTPUT_VCF
 
     # Clean up
-    rm \${OUTPUT_VCF}_COLLAPSED
-    rm input_COLLAPSED.vcf.gz
-    rm input.vcf.gz
+    rm \$output_COLLAPSED.vcf.gz
+    rm \$input_COLLAPSED.vcf.gz
 
     # create index
     ./bcftools index -f --tbi \$INPUT_VCF

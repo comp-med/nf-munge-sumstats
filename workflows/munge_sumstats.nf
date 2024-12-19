@@ -1,7 +1,6 @@
 include {
     GET_GENOME_BUILD;
     FORMAT_SUMSTATS;
-    SORT_GZIP;
     GET_LIFTOVER_FILES;
     LIFTOVER_SUMSTATS;
     SAVE_PARQUET;
@@ -54,13 +53,6 @@ workflow MUNGE_SUMSTATS {
             .combine(r_lib)
     )
 
-    // Before liftover, files need to be gzipped and indexed
-    indexed_files_ch = SORT_GZIP (
-        formatted_files_ch
-            .combine(bcftools_liftover_bin)
-            .combine(bgzip_bin)
-    )
-
     // Liftover required chain files and reference sequences. 
     // These are downloaded in this process
     liftover_files_ch = GET_LIFTOVER_FILES (
@@ -70,7 +62,7 @@ workflow MUNGE_SUMSTATS {
     // Liftover formatted summary statistics from one genome build into the other
     // so either grch37 -> grch38 or the other way around
     liftover_ch = LIFTOVER_SUMSTATS (
-        indexed_files_ch
+        formatted_files_ch
             .combine(liftover_files_ch)
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)
