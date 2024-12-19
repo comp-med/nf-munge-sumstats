@@ -1,7 +1,7 @@
 include {
     GET_GENOME_BUILD;
     FORMAT_SUMSTATS;
-    SORT_GZIP_INDEX;
+    SORT_GZIP;
     GET_LIFTOVER_FILES;
     LIFTOVER_SUMSTATS;
     SAVE_PARQUET;
@@ -55,7 +55,7 @@ workflow MUNGE_SUMSTATS {
     )
 
     // Before liftover, files need to be gzipped and indexed
-    indexed_files_ch = SORT_GZIP_INDEX (
+    indexed_files_ch = SORT_GZIP (
         formatted_files_ch
             .combine(bcftools_liftover_bin)
             .combine(bgzip_bin)

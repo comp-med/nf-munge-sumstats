@@ -166,7 +166,7 @@ process FORMAT_SUMSTATS {
 }
 
 // Indexing and zipping
-process SORT_GZIP_INDEX {
+process SORT_GZIP {
 
     cache true
     tag "$phenotype_name"
@@ -183,8 +183,7 @@ process SORT_GZIP_INDEX {
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
-        path("formatted_sumstats_${genome_build}.vcf.gz"),
-        path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
+        path("formatted_sumstats_${genome_build}.vcf.gz")
 
     script:
     """
@@ -195,15 +194,11 @@ process SORT_GZIP_INDEX {
 
     # BGZip the file
     ./bgzip \$INPUT_VCF
-
-    # Index the file
-    ./bcftools index --tbi \${INPUT_VCF}.gz
     """
 
     stub:
     """
     touch "formatted_sumstats_${genome_build}.vcf.gz"
-    touch "formatted_sumstats_${genome_build}.vcf.gz.tbi"
     """
   
 }
@@ -279,7 +274,6 @@ process LIFTOVER_SUMSTATS {
         val(genome_build),
         val(other_genome_build),
         path(formatted_sumstats),
-        path(formatted_sumstats_index),
         path(hg19_reference),
         path(hg38_reference),
         path(hg19_to_38_chain_file),
