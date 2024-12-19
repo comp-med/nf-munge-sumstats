@@ -313,25 +313,25 @@ process LIFTOVER_SUMSTATS {
     # CHECKS ----
 
     # Check the file using bcftools
-    ./bcftools +af-dist \$output_COLLAPSED.vcf.gz
-    ./bcftools +fixref \$output_COLLAPSED.vcf.gz -- -f \$TARGET_REF
-    ./bcftools stats \$output_COLLAPSED.vcf.gz
+    ./bcftools +af-dist output_COLLAPSED.vcf.gz
+    ./bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF
+    ./bcftools stats output_COLLAPSED.vcf.gz
 
     # Sort, expand, index and save
-    ./bcftools  sort -Oz \$output_COLLAPSED.vcf.gz | \
+    ./bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
     ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o \$output_NO_INFO.vcf.gz
+    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o output_NO_INFO.vcf.gz
 
     # This is because bcftools does not modify in-place, apparently
     rm \$OUTPUT_VCF
-    mv \$output_NO_INFO.vcf.gz \$OUTPUT_VCF
+    mv output_NO_INFO.vcf.gz \$OUTPUT_VCF
 
     # Clean up
-    rm \$output_COLLAPSED.vcf.gz
-    rm \$input_COLLAPSED.vcf.gz
+    rm output_COLLAPSED.vcf.gz
+    rm input_COLLAPSED.vcf.gz
 
     # create index
     ./bcftools index -f --tbi \$INPUT_VCF
