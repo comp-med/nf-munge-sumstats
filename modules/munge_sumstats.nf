@@ -216,7 +216,7 @@ process GET_LIFTOVER_FILES {
 // Liftover summary statistics from given assembly to the other one
 process LIFTOVER_SUMSTATS {
 
-    cache true
+    cache 'lenient'
     tag "$phenotype_name: $genome_build -> $other_genome_build"
     publishDir = [
         [
