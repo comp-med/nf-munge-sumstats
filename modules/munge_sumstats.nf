@@ -319,17 +319,15 @@ process LIFTOVER_SUMSTATS {
 
     # Sort, expand, index and save
     ./bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
-    ./bcftools  norm --no-version -Oz -m- -o \$OUTPUT_VCF
+        ./bcftools  norm --no-version -Oz -m- -o output.vcf.gz
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO \$OUTPUT_VCF -Oz -o output_NO_INFO.vcf.gz
+    ./bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF
 
-    # This is because bcftools does not modify in-place, apparently
-    rm \$OUTPUT_VCF
-    mv output_NO_INFO.vcf.gz \$OUTPUT_VCF
-
+    # This is because bcftools does not modify in-place, apparently.
     # Clean up
+    rm output.vcf.gz
     rm output_COLLAPSED.vcf.gz
     rm input_COLLAPSED.vcf.gz
 
