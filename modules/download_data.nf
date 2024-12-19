@@ -2,6 +2,10 @@ process DOWNLOAD_OTHER_DATA {
 
     cache true
     tag "other: ${phenotype_name}"
+    publishDir "${params.outDir}/raw/${phenotype_name}",
+        mode: 'symlink',
+        pattern: "raw_sumstat_file.*",
+        overwrite: false
 
     input:
     tuple val(phenotype_name), val(download_link)
@@ -68,6 +72,10 @@ process DOWNLOAD_GWAS_CATALOG_DATA {
     cache true
     tag "gwas_catalog: ${phenotype_name}"
     label 'rProcess'
+    publishDir "${params.outDir}/raw/${phenotype_name}",
+        mode: 'symlink',
+        pattern: "raw_sumstat_file.*",
+        overwrite: false
 
     input:
     tuple val(phenotype_name), 
@@ -157,6 +165,10 @@ process DOWNLOAD_OPEN_GWAS_DATA {
 
     cache true
     tag "open_gwas: ${phenotype_name}"
+    publishDir "${params.outDir}/raw/${phenotype_name}",
+        mode: 'symlink',
+        pattern: "raw_sumstat_file.*",
+        overwrite: false
 
     input:
     tuple val(phenotype_name), val(id)
@@ -179,5 +191,37 @@ process DOWNLOAD_OPEN_GWAS_DATA {
     """
     touch raw_sumstat_file.vcf.gz
     """
+
+}
+
+process LINK_LOCAL_DATA {
+
+    cache true
+    tag "open_gwas: ${phenotype_name}"
+    publishDir "${params.outDir}/raw/${phenotype_name}",
+        mode: 'symlink',
+        pattern: "raw_sumstat_file.*",
+        overwrite: false
+
+    input:
+    tuple val(phenotype_name), path(local_file)
+
+    output:
+    tuple val(phenotype_name), path('raw_sumstat_file.*')
+
+    script: 
+    """
+    local_file="$local_file"
+    filename=\$(basename -- "\$local_file")
+    extension="\${filename##*.}"
+    sumstat_file="raw_sumstat_file.\$extension"
+    cp \$local_files \$umstat_file
+    """
+
+    stub:
+    """
+    touch raw_sumstat_file.tsv.gz
+    """
+
 
 }

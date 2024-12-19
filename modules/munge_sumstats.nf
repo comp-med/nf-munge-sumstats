@@ -263,12 +263,12 @@ process LIFTOVER_SUMSTATS {
     tag "$phenotype_name: $genome_build -> $other_genome_build"
     publishDir = [
         [
-            path: { "${params.outDir}/${phenotype_name}/grch37/" },
+            path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
             mode: 'copy',
             pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}"
         ],
         [
-            path: { "${params.outDir}/${phenotype_name}/grch38/" },
+            path: { "${params.outDir}/formatted/${phenotype_name}/grch38/" },
             mode: 'copy',
             pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}"
         ]
@@ -381,12 +381,12 @@ process SAVE_PARQUET {
     label 'rProcess'
     publishDir = [
         [
-            path: { "${params.outDir}/${phenotype_name}/grch37/" },
+            path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
             mode: 'copy',
             pattern: "formatted_sumstats_grch37.parquet"
         ],
         [
-            path: { "${params.outDir}/${phenotype_name}/grch38/" },
+            path: { "${params.outDir}/formatted/${phenotype_name}/grch38/" },
             mode: 'copy',
             pattern: "formatted_sumstats_grch38.parquet"
         ]

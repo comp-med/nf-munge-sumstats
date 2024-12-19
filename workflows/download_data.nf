@@ -6,6 +6,7 @@ include {
     DOWNLOAD_OPEN_GWAS_DATA;
     GWAS_CATALOG_SETUP;
     DOWNLOAD_GWAS_CATALOG_DATA;
+    LINK_LOCAL_DATA;
     } from '../modules/download_data.nf'
 
 workflow DOWNLOAD_DATA {
@@ -47,6 +48,7 @@ workflow DOWNLOAD_DATA {
     // Process each channel separately based on sub-channel
     def other_data_ch = DOWNLOAD_OTHER_DATA( data_src_ch.other )
     def open_gwas_data_ch = DOWNLOAD_OPEN_GWAS_DATA( data_src_ch.open_gwas )
+    def local_data_ch = LINK_LOCAL_DATA ( data_src_ch.local )
 
     def gwas_cat_setup_ch = GWAS_CATALOG_SETUP( r_lib.combine(lftp_bin) )
     def gwas_cat_data_ch = DOWNLOAD_GWAS_CATALOG_DATA( 
@@ -57,9 +59,7 @@ workflow DOWNLOAD_DATA {
     )
     
     // Join channels that contain the sumstat files
-    def data_ch = data_src_ch
-        .local
-        .concat(
+    def data_ch = local_data_ch.concat(
             other_data_ch,
             gwas_cat_data_ch,
             open_gwas_data_ch
