@@ -217,7 +217,7 @@ process LINK_LOCAL_DATA {
     sumstat_file="raw_sumstat_file.\$extension"
 
     # TODO: Maybe just use a symlink?
-    cp \$local_files \$sumstat_file
+    cp \$local_file \$sumstat_file
     """
 
     stub:
