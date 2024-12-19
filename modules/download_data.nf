@@ -215,6 +215,8 @@ process LINK_LOCAL_DATA {
     filename=\$(basename -- "\$local_file")
     extension="\${filename##*.}"
     sumstat_file="raw_sumstat_file.\$extension"
+
+    # TODO: Maybe just use a symlink?
     cp \$local_files \$umstat_file
     """
 

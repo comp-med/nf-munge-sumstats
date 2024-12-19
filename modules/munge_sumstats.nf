@@ -307,6 +307,7 @@ process LIFTOVER_SUMSTATS {
     FROM_GENOME_BUILD="$genome_build"
     TO_GENOME_BUILD="$other_genome_build"
     INPUT_VCF="$formatted_sumstats"
+    cp \$INPUT_VCF input.vcf.gz
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
     # LIFTOVER DIRECTION ----
@@ -322,16 +323,16 @@ process LIFTOVER_SUMSTATS {
     fi
 
     # Create a collapsed VCF and check REF/ALT alignment in the process
-    ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
+    ./bcftools norm --no-version -Ou -m+ input.vcf.gz \
     --check-ref ws \
     -f \$SOURCE_REF \
-    -o \${INPUT_VCF}_COLLAPSED
+    -o input_COLLAPSED.vcf.gz
 
     # Check Allele mismatches etc
-    ./bcftools +fixref \${INPUT_VCF}_COLLAPSED -- -f \$SOURCE_REF
+    ./bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF
 
     # Liftover
-    ./bcftools +liftover --no-version \${INPUT_VCF}_COLLAPSED -Ou -o \${OUTPUT_VCF}_COLLAPSED -- \
+    ./bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o \${OUTPUT_VCF}_COLLAPSED -- \
     -s \$SOURCE_REF \
     -f \$TARGET_REF \
     -c \$CHAIN  \
@@ -356,7 +357,8 @@ process LIFTOVER_SUMSTATS {
 
     # Clean up
     rm \${OUTPUT_VCF}_COLLAPSED
-    rm \${INPUT_VCF}_COLLAPSED
+    rm input_COLLAPSED.vcf.gz
+    rm input.vcf.gz
 
     # create index
     ./bcftools index -f --tbi \$INPUT_VCF
