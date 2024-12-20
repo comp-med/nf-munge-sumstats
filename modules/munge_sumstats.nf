@@ -357,7 +357,7 @@ process LIFTOVER_SUMSTATS {
 // To make downstream processing easier, save as tabular parquet
 process SAVE_PARQUET {
 
-    cache true
+    cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
     publishDir = [
