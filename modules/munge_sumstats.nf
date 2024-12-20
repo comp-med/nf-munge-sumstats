@@ -138,7 +138,7 @@ process FORMAT_SUMSTATS {
     )
     
     # Output is saved in list when logging is active!
-    sumstats <- sumstats\$sumstats 
+    sumstats <- sumstats\$sumstats munge
     
     # FIX BAD COLUMNS ----
     # This is contained in the HERMES summary statistics
@@ -423,49 +423,49 @@ process SAVE_PARQUET {
         ), "parquet"
       )
       
-      sumstats <- VariantAnnotation::readVcf(sumstats_files[i])
-      sumstats <- MungeSumstats:::vcf2df(
-        sumstats, 
-        add_sample_names = FALSE, 
-        add_rowranges = FALSE
+    sumstats <- VariantAnnotation::readVcf(sumstats_files[i])
+    sumstats <- MungeSumstats:::vcf2df(
+      sumstats, 
+      add_sample_names = FALSE, 
+      add_rowranges = FALSE
+    )
+    id_split <- tstrsplit(sumstats\$ID, r"{:|_|/}")
+    sumstats\$ID <- NULL
+    sumstats[, `:=`(
+      CHR_UCSC = id_split[[1]],
+      CHR_ENSEMBL = gsub("^chr", "", id_split[[1]]),
+      A1 = id_split[[3]],
+      A2 = id_split[[4]],
+      BP = id_split[[2]]
+    )]
+    sumstats[, `:=`(
+      ID_UCSC = paste0(
+        CHR_UCSC,
+        ":",
+        BP,
+        "_",
+        pmin(id_split[[3]], id_split[[4]]), 
+        "_",
+        pmax(id_split[[3]], id_split[[4]])
+      ),
+      ID_ENSEMBL = paste0(
+        CHR_ENSEMBL, 
+        ":",
+        BP,
+        "_",
+        pmin(id_split[[3]], id_split[[4]]),
+        "_",
+        pmax(id_split[[3]], id_split[[4]])
       )
-      id_split <- tstrsplit(sumstats\$ID, r"{:|_|/}")
-      sumstats\$ID <- NULL
-      sumstats[, `:=`(
-        CHR_UCSC = id_split[[1]],
-        CHR_ENSEMBL = gsub("^chr", "", id_split[[1]]),
-        A1 = id_split[[3]],
-        A2 = id_split[[4]],
-        BP = id_split[[2]]
-      )]
-      sumstats[, `:=`(
-        ID_UCSC = paste0(
-          CHR_UCSC,
-          ":",
-          BP,
-          "_",
-          pmin(id_split[[3]], id_split[[4]]), 
-          "_",
-          pmax(id_split[[3]], id_split[[4]])
-        ),
-        ID_ENSEMBL = paste0(
-          CHR_ENSEMBL, 
-          ":",
-          BP,
-          "_",
-          pmin(id_split[[3]], id_split[[4]]),
-          "_",
-          pmax(id_split[[3]], id_split[[4]])
-        )
-      )]
-      id_cols <- c(
-        "CHR_UCSC", "CHR_ENSEMBL", "BP", "END", "A1",
-        "A2", "ID_UCSC", "ID_ENSEMBL", "SNP"
-      )
-      remaining_cols <- setdiff(names(sumstats), id_cols)
-      data.table::setcolorder(sumstats, c(id_cols, remaining_cols))
-      
-      arrow::write_parquet(
+    )]
+    id_cols <- c(
+      "CHR_UCSC", "CHR_ENSEMBL", "BP", "END", "A1",
+      "A2", "ID_UCSC", "ID_ENSEMBL", "SNP"
+    )
+    id_cols <- intersect(id_cols, names(sumstats))
+    remaining_cols <- setdiff(names(sumstats), id_cols)
+    data.table::setcolorder(sumstats, c(id_cols, remaining_cols))  
+    arrow::write_parquet(
         sumstats,
         parquet_file_name, 
       )

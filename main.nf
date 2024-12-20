@@ -43,10 +43,11 @@ def helpMessage() {
 include { SETUP_MUNGING } from './workflows/setup_munging.nf'
 include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
-// WORKFLOW -------------------------------------------------------------------
+// ENTRY WORKFLOW -------------------------------------------------------------
 
 workflow {
 
+  // Create Variables from parameters // TODO: Have all parameters here!
   def input_dir = file("$params.input")
 
   // Where to find all R packages
