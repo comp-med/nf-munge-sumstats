@@ -59,11 +59,11 @@ workflow {
   // Download raw summary statistics from various sources
   def input_files_ch  = Channel
       .fromPath(
-          input_dir,
+          "$input_dir/**/raw_sumstat_file.*",
           followLinks: true,
           checkIfExists: true)
        .map { 
-      path -> [path.getParent().getName(), file(path)] 
+      path -> [path.getParent().getName(), file(path)]
   }
 
   // Prepare additional input for liftover function
