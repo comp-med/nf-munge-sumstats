@@ -53,7 +53,7 @@ process GET_GENOME_BUILD {
 // Format summary statistics without lifting them over
 process FORMAT_SUMSTATS {
     
-    cache true
+    cache 'lenient'
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
 
