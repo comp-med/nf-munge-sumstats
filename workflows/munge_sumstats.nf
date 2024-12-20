@@ -17,16 +17,6 @@ workflow MUNGE_SUMSTATS {
 
     main:
 
-    // def raw_input_files_ch = Channel
-    //     .watchPath("$params.outDir/raw/**/raw_sumstat_file.*", 'create,modify')
-    //     // .fromPath(
-    //     //     "$params.outDir/raw/**/raw_sumstat_file.*",
-    //     //     followLinks: true,
-    //     //     checkIfExists: true)
-    //         .map { 
-    //     path -> [path.getParent().getName(), file(path)] 
-    // }.view()
-
     input_files_ch = GET_GENOME_BUILD (
         input_files_ch.combine(r_lib) 
     ).map {
