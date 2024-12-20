@@ -138,7 +138,7 @@ process FORMAT_SUMSTATS {
     )
     
     # Output is saved in list when logging is active!
-    sumstats <- sumstats\$sumstats munge
+    sumstats <- sumstats\$sumstats
     
     # FIX BAD COLUMNS ----
     # This is contained in the HERMES summary statistics
