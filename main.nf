@@ -40,7 +40,6 @@ def helpMessage() {
 
 // WORKFLOWS ------------------------------------------------------------------
 
-include { DOWNLOAD_DATA } from './workflows/download_data.nf'
 include { SETUP_MUNGING } from './workflows/setup_munging.nf'
 include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
@@ -48,20 +47,24 @@ include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
 workflow {
 
-  // Main file containing Data IDs and necessary meta data
-  def input_table = file(params.input_table)
+  def input_dir = file("$params.input")
 
   // Where to find all R packages
   def r_lib    = Channel.fromPath(params.local_r_library)
 
   // Where to find additional binaries // TODO: create environments
-  def lftp_bin = Channel.fromPath(params.lftp_bin)
   def bcftools_liftover_bin = Channel.fromPath(params.bcftools_liftover_bin)
   def bgzip_bin = Channel.fromPath(params.bgzip_bin)
   
   // Download raw summary statistics from various sources
-  DOWNLOAD_DATA (input_table, r_lib, lftp_bin)
-  def input_files_ch = DOWNLOAD_DATA.out.data
+  def input_files_ch  = Channel
+      .fromPath(
+          input_dir,
+          followLinks: true,
+          checkIfExists: true)
+       .map { 
+      path -> [path.getParent().getName(), file(path)] 
+  }
 
   // Prepare additional input for liftover function
   SETUP_MUNGING (input_files_ch, r_lib)
