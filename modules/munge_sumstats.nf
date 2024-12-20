@@ -142,7 +142,18 @@ process FORMAT_SUMSTATS {
     
     # FIX BAD COLUMNS ----
     # This is contained in the HERMES summary statistics
-    sumstats\$`#KEY` <- NULL
+    sumstats\$`#KEY` <- NULL # TODO: Is this still needed?
+
+    # Remove all column names that are not expected in a GWAS-VCF
+    canonical_colnames <- unique(custom_sumstatsColHeaders\$Corrected)
+    non_canonical_colnames <- setdiff(
+      names(elementMetadata(sumstats)),
+      canonical_colnames
+    )
+    if (length(non_canonical_colnames) > 0) {
+      for (i in non_canonical_colnames)
+          elementMetadata(sumstats)[[i]] <- NULL
+    }
 
     # CLEANUP ----
     # This is annoying but there's no way around it.
