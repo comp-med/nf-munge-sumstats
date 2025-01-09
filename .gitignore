@@ -5,3 +5,4 @@ work/
 testData/
 config/test.config
 output/
+config/local.config

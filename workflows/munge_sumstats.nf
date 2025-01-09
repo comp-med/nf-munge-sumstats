@@ -18,7 +18,7 @@ workflow MUNGE_SUMSTATS {
     main:
 
     input_files_ch = GET_GENOME_BUILD (
-        input_files_ch.combine(r_lib) 
+        input_files_ch.combine(custom_col_headers).combine(r_lib)
     ).map {
         tup -> [
         tup[0],

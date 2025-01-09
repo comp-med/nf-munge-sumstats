@@ -6,7 +6,7 @@ process GET_GENOME_BUILD {
     label 'rProcess'
 
     input:
-    tuple val(phenotype_name), path(raw_sumstat_file), path(r_lib)
+    tuple val(phenotype_name), path(raw_sumstat_file), path(custom_col_headers), path(r_lib)
 
     output:
     tuple val(phenotype_name), path("genome_build"), path(raw_sumstat_file)
@@ -17,25 +17,29 @@ process GET_GENOME_BUILD {
 
     # SETUP ----
     r_lib <- "$r_lib"
-    library("MungeSumstats", lib.loc = r_lib)
-    library("GenomicFiles", lib.loc = r_lib)
+    suppressPackageStartupMessages(library("MungeSumstats", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("GenomicFiles", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
 
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
     raw_sumstat_file <- "$raw_sumstat_file"
-
+    custom_sumstatsColHeaders <- "$custom_col_headers"
+    
     # INPUT PREP ----
-    raw_sumstat_file <- list(raw_sumstat_file)
-    names(raw_sumstat_file) <- phenotype_name 
-
-    file_genome_build <- get_genome_builds(
+    custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
+    setDF(custom_sumstatsColHeaders)
+    
+    # MAIN ----
+    file_genome_build <- MungeSumstats:::get_genome_build(
         raw_sumstat_file,
+        mapping_file = custom_sumstatsColHeaders
         header_only = TRUE,
         sampled_snps = 50000,
         dbSNP = 155,
         nThread = 8 # TODO: Make this adaptable!
     )
-    file_genome_build <- tolower(unlist(file_genome_build))
+    file_genome_build <- tolower(file_genome_build)
     writeLines(
         file_genome_build,
         "genome_build", 
