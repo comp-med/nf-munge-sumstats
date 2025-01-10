@@ -31,13 +31,68 @@ process GET_GENOME_BUILD {
     setDF(custom_sumstatsColHeaders)
     
     # MAIN ----
-    file_genome_build <- MungeSumstats:::get_genome_build(
-        raw_sumstat_file,
-        mapping_file = custom_sumstatsColHeaders,
-        header_only = TRUE,
-        sampled_snps = 50000,
-        dbSNP = 155,
-        nThread = 8 # TODO: Make this adaptable!
+    file_genome_build <- tryCatch(
+        MungeSumstats:::get_genome_build(
+            raw_sumstat_file,
+            mapping_file = custom_sumstatsColHeaders,
+            header_only = TRUE,
+            sampled_snps = 50000,
+            dbSNP = 155,
+            nThread = as.numeric("$task.cpus")
+        ),
+        error = function(cnd) {
+            message(
+              "Trying to impute genome build by comparing number of ",
+              "rsIDs that can be mapped with either GRCh37 or GRCh38 dbSNP."
+            )
+            # From: `https://support.bioconductor.org/p/9153164/`
+            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh37))
+            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh38))
+            suppressMessages(library(GenomicRanges))
+            dat <- fread(raw_sumstat_file, nrows = 5e4)
+            dat <- suppressMessages(
+              MungeSumstats::standardise_header(
+                dat,
+                mapping_file = custom_sumstatsColHeaders, 
+                return_list = FALSE
+              ))
+            gr <- suppressMessages(MungeSumstats:::to_granges(dat))
+            known_snps_b37 <- snpsByOverlaps(SNPlocs.Hsapiens.dbSNP155.GRCh37, gr)
+            known_snps_b38 <- snpsByOverlaps(SNPlocs.Hsapiens.dbSNP155.GRCh38, gr)
+            hits_b37 <- findOverlaps(gr, known_snps_b37)
+            hits_b38 <- findOverlaps(gr, known_snps_b38)
+            if (
+              anyDuplicated(queryHits(hits_b37)) || 
+              anyDuplicated(queryHits(hits_b38))
+            ) {
+              warning("some SNPs are mapped to more than 1 known SNP")
+            }
+            if (length(hits_b37) > length(hits_b38)) {
+              message(
+                paste0(
+                  "Managed to map ", 
+                  length(hits_b37), 
+                  "rsIDs to 50k variants with GRCh37 compared to ", 
+                  length(hits_b38), 
+                  " for GRCh38. Proceeding with GRCh37."
+                )
+              )
+              return("GRCh37")
+            } else if (length(hits_b38) > length(hits_b37)) {
+              message(
+                paste0(
+                  "Managed to map ", 
+                  length(hits_b38), 
+                  " rsIDs to 50k variants with GRCh38 compared to ", 
+                  length(hits_b37), 
+                  " for GRCh37. Proceeding with GRCh38."
+                )
+              )
+              return("GRCh38") 
+            } else {
+              stop("Could not determine genome build and impute rsIDs!")
+            }
+        }
     )
     file_genome_build <- tolower(file_genome_build)
     writeLines(
@@ -144,10 +199,6 @@ process FORMAT_SUMSTATS {
     # Output is saved in list when logging is active!
     sumstats <- sumstats\$sumstats
     
-    # FIX BAD COLUMNS ----
-    # This is contained in the HERMES summary statistics
-    sumstats\$`#KEY` <- NULL # TODO: Is this still needed?
-
     # Remove all column names that are not expected in a GWAS-VCF
     canonical_colnames <- unique(custom_sumstatsColHeaders\$Corrected)
     non_canonical_colnames <- setdiff(

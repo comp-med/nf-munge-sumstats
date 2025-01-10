@@ -44,7 +44,9 @@ configured in `nextflow.config`.
 * R packages: 
     * From GitHub: [MungeSumstats](https://github.com/Al-Murphy/MungeSumstats)
     * From CRAN: `data.table`, `fs`, `arrow`
-    * From Bioconductor: `GenomicFiles`, `VariantAnnotation`, `GenomeInfoDb`
+    * From Bioconductor: `GenomicFiles`, `GenomicRanges`, `VariantAnnotation`,
+      `GenomeInfoDb`, `SNPlocs.Hsapiens.dbSNP155.GRCh37`, 
+      `SNPlocs.Hsapiens.dbSNP155.GRCh38`
 
 ## Gettings Started
 
