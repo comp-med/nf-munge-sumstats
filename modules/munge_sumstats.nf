@@ -33,7 +33,7 @@ process GET_GENOME_BUILD {
     # MAIN ----
     file_genome_build <- MungeSumstats:::get_genome_build(
         raw_sumstat_file,
-        mapping_file = custom_sumstatsColHeaders
+        mapping_file = custom_sumstatsColHeaders,
         header_only = TRUE,
         sampled_snps = 50000,
         dbSNP = 155,
