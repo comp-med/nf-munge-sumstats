@@ -183,7 +183,7 @@ process FORMAT_SUMSTATS {
         bi_allelic_filter = FALSE,
         flip_frq_as_biallelic = TRUE,
         
-        ref_genome = ifelse(genome_build == "grch37", "GRCh37", "GRCH38"), 
+        ref_genome = ifelse(genome_build == "grch37", "GRCh37", "GRCh38"), 
         on_ref_genome = TRUE, 
         convert_ref_genome = NULL,
         
