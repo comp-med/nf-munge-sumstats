@@ -6,3 +6,4 @@ testData/
 config/test.config
 output/
 config/local.config
+config/cluster.config
