@@ -56,13 +56,15 @@ process CHECK_INPUT_COL_HEADERS {
       "CHROMSOME", "NCONTROLS", "HM_VARIANT_ID", "HM_RSID", "HM_CHROM", 
       "HM_POS", "HM_OTHER_ALLELE", "HM_EFFECT_ALLELE", "HM_BETA", "HM_ODDS_RATIO", 
       "HM_EFFECT_ALLELE_FREQUENCY", "OR_ALLELE", "NONOR_ALLELE", "OR_SE", "NCONTROLS",
-      "POSITION_GRCH37", "EFFECT_ALLELE_FREQ_1000G"
+      "POSITION_GRCH37", "EFFECT_ALLELE_FREQ_1000G", "METAL_Effect", "METAL_StdErr",
+      "METAL_Pvalue"
     )
     Corrected <- c(
       "NSTUDY", "N", "FRQ", "BETA", "SE", "P", "HETPVAL", "NSTUDY", 
       "N_CAS", "BETA", "SE", "N_CON", "HETISQT", "HETPVAL", "INFO", 
       "FRQ", "CHR", "N_CON", "SNP", "SNP", "CHR", "BP", "A1", "A2", 
-      "BETA", "OR", "FRQ", "A2", "A1", "SE", "N_CON", "BP", "FRQ"
+      "BETA", "OR", "FRQ", "A2", "A1", "SE", "N_CON", "BP", "FRQ",
+      "BETA", "SE", "P"
     )
     matching_table_unmatched <- data.table(Uncorrected, Corrected)
 
