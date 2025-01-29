@@ -1,7 +1,7 @@
 // To know whether I want to liftover data or not I need to infer genome build
 process GET_GENOME_BUILD {
     
-    cache true
+    cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
 
@@ -234,7 +234,7 @@ process FORMAT_SUMSTATS {
 // Get chain files and reference sequences necessary for liftover
 process GET_LIFTOVER_FILES {
     
-    cache true
+    cache 'lenient'
     tag 'single_execution'
 
     input:

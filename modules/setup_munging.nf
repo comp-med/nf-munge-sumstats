@@ -1,6 +1,6 @@
 process CHECK_INPUT_COL_HEADERS {
     
-    cache true
+    cache 'lenient'
     tag 'singe_execution'
     label 'rProcess'
     
