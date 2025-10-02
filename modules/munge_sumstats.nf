@@ -284,7 +284,7 @@ process LIFTOVER_SUMSTATS {
 
     cache 'lenient'
     tag "$phenotype_name:$genome_build->$other_genome_build"
-    publishDir = [
+    publishDir [
         [
             path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
             mode: 'copy',
@@ -415,7 +415,7 @@ process SAVE_PARQUET {
     cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
-    publishDir = [
+    publishDir [
         [
             path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
             mode: 'copy',

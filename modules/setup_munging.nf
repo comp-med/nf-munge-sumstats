@@ -44,7 +44,8 @@ process CHECK_INPUT_COL_HEADERS {
       "EFFECTIVE_CASES", "CI_LOWER", "CI_UPPER", "HWEP", "IMPUTATIONINFO", 
       "#KEY", "LOGP", "QUAL", "FILTER", "FORMAT", "LP", "CHISQ_LINREG", 
       "CHISQ_BOLT_LMM_INF", "P_BOLT_LMM_INF", "CHISQ_BOLT_LMM", "END", 
-      "HM_CI_LOWER", "HM_CI_UPPER", "HM_CODE", "HM_COORDINATE_CONVERSION"
+      "HM_CI_LOWER", "HM_CI_UPPER", "HM_CODE", "HM_COORDINATE_CONVERSION",
+      "POS_REGION_START_REGION_END"
     )
     unknown_colnames <- setdiff(unknown_colnames, superfluous_names)
      
@@ -57,14 +58,14 @@ process CHECK_INPUT_COL_HEADERS {
       "HM_POS", "HM_OTHER_ALLELE", "HM_EFFECT_ALLELE", "HM_BETA", "HM_ODDS_RATIO", 
       "HM_EFFECT_ALLELE_FREQUENCY", "OR_ALLELE", "NONOR_ALLELE", "OR_SE", "NCONTROLS",
       "POSITION_GRCH37", "EFFECT_ALLELE_FREQ_1000G", "METAL_EFFECT", "METAL_STDERR",
-      "METAL_PVALUE", "POOLED_ALT_AF"
+      "METAL_PVALUE", "POOLED_ALT_AF", "FREQ1"
     )
     Corrected <- c(
       "NSTUDY", "N", "FRQ", "BETA", "SE", "P", "HETPVAL", "NSTUDY", 
       "N_CAS", "BETA", "SE", "N_CON", "HETISQT", "HETPVAL", "INFO", 
       "FRQ", "CHR", "N_CON", "SNP", "SNP", "CHR", "BP", "A1", "A2", 
       "BETA", "OR", "FRQ", "A2", "A1", "SE", "N_CON", "BP", "FRQ",
-      "BETA", "SE", "P", "FRQ"
+      "BETA", "SE", "P", "FRQ", "FRQ"
     )
     matching_table_unmatched <- data.table(Uncorrected, Corrected)
 
