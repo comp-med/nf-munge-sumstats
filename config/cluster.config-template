@@ -1,0 +1,57 @@
+// Configuration for HPC with SLURM
+
+// Container Runtime Configuration --------------------------------------------
+
+apptainer {
+  enabled    = true
+  temp       = '~/.apptainer'
+}
+
+params {
+  // Add the path to the container image to run R from
+  rApptainerPath = ''
+  // Add bind directories in a comma-separated list
+  apptainerBind  = ''
+}
+
+process {
+  executor         = 'slurm'
+  time             = 1.h
+  memory           = 4.GB
+  cpus             = 8
+  containerOptions = "--bind $params.apptainerBind"
+}
+
+// Process Configuration ------------------------------------------------------
+
+process {
+    withLabel: rProcess {
+       container     = "file://$params.rApptainerPath"
+       cpus          = { 8 }
+       memory        = { 32.GB }
+       time          = { 1.h }
+       errorStrategy = 'terminate'
+       maxRetries    = 0
+    }
+    withName: "CHECK_INPUT_COL_HEADERS" {
+        cpus          = { 8 * task.attempt }
+        memory        = { 32.GB * task.attempt }
+        time          = { 3.h * task.attempt }
+        errorStrategy = { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+        maxRetries    = 2
+    }
+    withName: "SAVE_PARQUET|LIFTOVER_SUMSTATS" {
+        cpus          = { 8 * task.attempt }
+        memory        = { 32.GB * task.attempt }
+        time          = { 1.h * task.attempt }
+        errorStrategy = { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+        maxRetries    = 2
+    }
+    withName: "GET_GENOME_BUILD|FORMAT_SUMSTATS" {
+        cpus          = { 16 * task.attempt }
+        memory        = { 64.GB * task.attempt }
+        time          = { 1.h * task.attempt }
+        errorStrategy = { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+        maxRetries    = 2
+    }
+}
