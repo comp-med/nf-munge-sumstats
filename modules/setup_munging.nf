@@ -18,6 +18,7 @@ process CHECK_INPUT_COL_HEADERS {
     # SETUP ----
     library(data.table, lib.loc = "$r_lib")
     library(MungeSumstats, lib.loc = "$r_lib")
+    library(parallel, lib.loc = "$r_lib")
 
     # INPUT FILE COLUMN NAMES ----
     input_files <- unlist(
@@ -28,9 +29,10 @@ process CHECK_INPUT_COL_HEADERS {
       use.names = FALSE
     )
     vcf_filter <- !grepl(r"[\\.vcf\$|vcf\\.gz\$]", input_files)
-    all_colnames <- lapply(input_files[vcf_filter], function(file) {
+    all_colnames <- parallel::mclapply(input_files[vcf_filter], function(file) {
+      message(file) # TODO use logger instead
       names(fread(file, nrows = 0))
-    })
+    }, mc.cores = 7L) # TODO Use parameter value
     all_colnames <- toupper(unique(unlist(all_colnames)))
     length(all_colnames)
 
