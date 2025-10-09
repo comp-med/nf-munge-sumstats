@@ -236,6 +236,7 @@ process GET_LIFTOVER_FILES {
     
     cache 'lenient'
     tag 'single_execution'
+    conda 'conda_envs/samtools.yml'
 
     input:
     path(bgzip_bin)
@@ -284,6 +285,8 @@ process LIFTOVER_SUMSTATS {
 
     cache 'lenient'
     tag "$phenotype_name:$genome_build->$other_genome_build"
+    conda 'conda_envs/samtools.yml'
+
     publishDir = [
         [
             path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
