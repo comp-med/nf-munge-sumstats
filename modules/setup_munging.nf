@@ -33,7 +33,7 @@ process CHECK_INPUT_COL_HEADERS {
       message(file) # TODO use logger instead
       names(fread(file, nrows = 0))
     }, mc.cores = 7L) # TODO Use parameter value
-    all_colnames <- toupper(unique(unlist(all_colnames)))
+    all_colnames <- unique(toupper(unlist(all_colnames)))
     length(all_colnames)
 
     # COLUMN NAME MAPPING TABLE ----
