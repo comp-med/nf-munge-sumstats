@@ -34,7 +34,7 @@ process CHECK_INPUT_COL_HEADERS {
       names(fread(file, nrows = 0))
     }, mc.cores = 7L) # TODO Use parameter value
     all_colnames <- unique(toupper(unlist(all_colnames)))
-    length(all_colnames)
+    length(all_colnames) # TODO: turn into debug msg
 
     # COLUMN NAME MAPPING TABLE ----
     unknown_colnames <- setdiff(
@@ -77,9 +77,11 @@ process CHECK_INPUT_COL_HEADERS {
         matching_table_unmatched\$Uncorrected
     )
     if (length(unknown_colnames) != 0) {
+      fwrite(data.table(unknown_colnames), "unknown_colnames.csv")
       message("Unknown column headers detected!")
       message("You might want to add them in the process `CHECK_INPUT_COL_HEADERS`")
       message(paste(unknown_colnames, collapse = ", "))
+      stop("Unknown column headers! Manual intervention required")
     }
 
     # NEW MAPPING TABLE ----
