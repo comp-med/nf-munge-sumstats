@@ -12,6 +12,7 @@ workflow SETUP_MUNGING {
     r_lib
 
     main:
+    // TODO: Create a new Process to read column names to then pass into CHECK...
     def input_file_table_ch = input_files_ch
         .map {
             row -> "${row[1]}"
