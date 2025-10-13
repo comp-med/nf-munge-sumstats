@@ -1,3 +1,36 @@
+process GET_INPUT_COL_HEADERS {
+    cache 'lenient'
+    tag '$file_id'
+    label 'rProcess'
+    
+    input:
+    tuple val(file_id), path(input_file_path)
+    path r_lib
+
+    output:
+    path "column_headers.csv"
+
+    script:
+    """
+    #! /usr/bin/env Rscript
+    r_lib  <- "$r_lib"
+    library(data.table, lib.loc = r_lib)
+
+    input_file  <- "$input_file_path"
+    file_colnames <- toupper(names(fread(input_file, nrows = 0)))
+    fwrite(
+        list(
+        colnames = file_colnames), 
+        "column_headers.csv"
+    )
+    """
+
+    stub:
+    """
+    touch column_headers.csv
+    """
+}
+
 process CHECK_INPUT_COL_HEADERS {
     
     cache 'lenient'
@@ -5,7 +38,7 @@ process CHECK_INPUT_COL_HEADERS {
     label 'rProcess'
     
     input:
-    path input_file_table
+    path column_header_table
     path r_lib
 
     output:
@@ -18,22 +51,21 @@ process CHECK_INPUT_COL_HEADERS {
     # SETUP ----
     library(data.table, lib.loc = "$r_lib")
     library(MungeSumstats, lib.loc = "$r_lib")
-    library(parallel, lib.loc = "$r_lib")
 
     # INPUT FILE COLUMN NAMES ----
     input_files <- unlist(
       fread(
-        "$input_file_table",
+        "$column_header_table",
         header = FALSE
         ),
       use.names = FALSE
     )
-    vcf_filter <- !grepl(r"[\\.vcf\$|vcf\\.gz\$]", input_files)
-    all_colnames <- parallel::mclapply(input_files[vcf_filter], function(file) {
+    all_colnames <- lapply(input_files, function(file) {
       message(file) # TODO use logger instead
-      names(fread(file, nrows = 0))
-    }, mc.cores = 7L) # TODO Use parameter value
-    all_colnames <- unique(toupper(unlist(all_colnames)))
+      fread(file)
+    })
+    all_colnames <- rbindlist(all_colnames)
+    all_colnames <- unique(toupper(unlist(all_colnames\$colnames)))
     length(all_colnames) # TODO: turn into debug msg
 
     # COLUMN NAME MAPPING TABLE ----
