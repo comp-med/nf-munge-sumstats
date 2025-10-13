@@ -19,10 +19,10 @@ workflow SETUP_MUNGING {
         .filter({tuple -> tuple[1] =~ /^(?!.*\.vcf(?:\.gz)?$).+/})
 
     input_files_ch = GET_INPUT_COL_HEADERS(
-        input_files_ch,
-        r_lib
-    ).collectFile(
-        name: "all_input_files",
+        input_files_ch.combine(r_lib)
+    ).map { file -> "$file"
+    }.collectFile(
+        name: "all_input_files.csv",
         newLine: true
     )
 

@@ -1,11 +1,10 @@
 process GET_INPUT_COL_HEADERS {
     cache 'lenient'
-    tag '$file_id'
+    tag "$file_id"
     label 'rProcess'
     
     input:
-    tuple val(file_id), path(input_file_path)
-    path r_lib
+    tuple val(file_id), path(input_file_path), path(r_lib)
 
     output:
     path "column_headers.csv"
@@ -178,8 +177,8 @@ process CHECK_INPUT_COL_HEADERS {
       "HETP",
       "CMH P",
       "SNP_ONCO",
-        "EFFECT_ALLELE_FREQUENCY_CASES",
-  "EFFECT_ALLELE_FREQUENCY_CONTROLS",
+      "EFFECT_ALLELE_FREQUENCY_CASES",
+      "EFFECT_ALLELE_FREQUENCY_CONTROLS"
     )
     unknown_colnames <- setdiff(unknown_colnames, superfluous_names)
      
