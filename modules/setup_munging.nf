@@ -178,7 +178,10 @@ process CHECK_INPUT_COL_HEADERS {
       "CMH P",
       "SNP_ONCO",
       "EFFECT_ALLELE_FREQUENCY_CASES",
-      "EFFECT_ALLELE_FREQUENCY_CONTROLS"
+      "EFFECT_ALLELE_FREQUENCY_CONTROLS",
+      "MAC",
+      "P.VALUE.GC",
+      "STDERR.GC"
     )
     unknown_colnames <- setdiff(unknown_colnames, superfluous_names)
      

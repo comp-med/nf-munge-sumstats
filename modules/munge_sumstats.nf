@@ -286,19 +286,15 @@ process LIFTOVER_SUMSTATS {
     cache 'lenient'
     tag "$phenotype_name:$genome_build->$other_genome_build"
     conda 'conda_envs/samtools.yml'
-
-    publishDir = [
-        [
-            path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
-            mode: 'copy',
-            pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}"
-        ],
-        [
-            path: { "${params.outDir}/formatted/${phenotype_name}/grch38/" },
-            mode: 'copy',
-            pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}"
-        ]
-    ]
+    publishDir (
+        path: "${params.outDir}/formatted/${phenotype_name}/",
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch{37,38}.vcf{.gz,.gz.tbi}",
+	saveAs: { fn ->
+	    if (fn.contains("grch38")) {"grch38/${fn}"}
+	    else {"grch37/${fn}"}
+	}
+    )
 
     input:
     tuple val(phenotype_name),
@@ -418,18 +414,15 @@ process SAVE_PARQUET {
     cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
-    publishDir = [
-        [
-            path: { "${params.outDir}/formatted/${phenotype_name}/grch37/" },
-            mode: 'copy',
-            pattern: "formatted_sumstats_grch37.parquet"
-        ],
-        [
-            path: { "${params.outDir}/formatted/${phenotype_name}/grch38/" },
-            mode: 'copy',
-            pattern: "formatted_sumstats_grch38.parquet"
-        ]
-    ]
+    publishDir (
+        path: "${params.outDir}/formatted/${phenotype_name}/",
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch{37,38}.parquet",
+	saveAs: { fn ->
+	    if (fn.endsWith("grch38.parquet")) {"grch38/${fn}"}
+	    else {"grch37/${fn}"}
+	}
+    )
 
     input:
     tuple val(phenotype_name),
