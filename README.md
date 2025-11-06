@@ -116,6 +116,11 @@ to manually adjust the code in this step to make it run successfully.
 
 ##  TODO
 
+* Make process to ID metal format to manually rename columns
+* Try to find a way around statistics missing RSIDs as those are required when
+  inferring the genome build
+* Retain liftover and munging logs
+* Logging
 * Make more setting for `MungeSumstats` user-facing
 * Externalize the currently internal proxy settings
 * Look for `TODO`s in the code!
