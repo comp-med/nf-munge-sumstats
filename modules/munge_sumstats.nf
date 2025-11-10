@@ -115,7 +115,12 @@ process FORMAT_SUMSTATS {
     cache 'lenient'
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
-
+    publishDir (
+        path: "${params.outDir}/formatted/${phenotype_name}/",
+        mode: 'copy',
+        pattern: "logs/formatted_sumstats_grch{37,38}_log_msg.txt",
+	saveAs: { _fn -> "logs/munge_sumstats_log.txt" }
+    )
     input:
     tuple val(phenotype_name),
         val(genome_build),
