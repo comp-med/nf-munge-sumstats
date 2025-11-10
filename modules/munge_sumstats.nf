@@ -116,11 +116,12 @@ process FORMAT_SUMSTATS {
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
     publishDir (
-        path: "${params.outDir}/formatted/${phenotype_name}/",
+        path: "${params.outDir}/formatted/${phenotype_name}/logs",
         mode: 'copy',
-        pattern: "logs/formatted_sumstats_grch{37,38}_log_msg.txt",
-	saveAs: { _fn -> "logs/munge_sumstats_log.txt" }
+        pattern: "logs/formatted_sumstats_${genome_build}_log_msg.txt",
+	saveAs: { _fn -> "munge_sumstats_log.txt" }
     )
+
     input:
     tuple val(phenotype_name),
         val(genome_build),
@@ -133,7 +134,8 @@ process FORMAT_SUMSTATS {
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
-        path("formatted_sumstats_${genome_build}.vcf")
+        path("formatted_sumstats_${genome_build}.vcf"),
+        path("logs/formatted_sumstats_${genome_build}_log_msg.txt")
 
     script:
     """
@@ -232,6 +234,8 @@ process FORMAT_SUMSTATS {
     stub:
     """
     touch "formatted_sumstats_${genome_build}.vcf"
+    mkdir -p logs
+    touch "logs/formatted_sumstats_${genome_build}_log_msg.txt"
     """
 
 }
@@ -295,17 +299,24 @@ process LIFTOVER_SUMSTATS {
         path: "${params.outDir}/formatted/${phenotype_name}/",
         mode: 'copy',
         pattern: "formatted_sumstats_grch{37,38}.vcf{.gz,.gz.tbi}",
-	saveAs: { fn ->
-	    if (fn.contains("grch38")) {"grch38/${fn}"}
-	    else {"grch37/${fn}"}
-	}
+        saveAs: { fn ->
+            if (fn.contains("grch38")) {"grch38/${fn}"}
+            else {"grch37/${fn}"}
+        }
     )
+    publishDir (
+        path: "${params.outDir}/formatted/${phenotype_name}/logs",
+        mode: 'copy',
+        pattern: "liftover_log.txt"
+    ) 
+        
 
     input:
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
         path(formatted_sumstats),
+        path(munging_log),
         path(hg19_reference),
         path(hg38_reference),
         path(hg19_to_38_chain_file),
@@ -318,7 +329,8 @@ process LIFTOVER_SUMSTATS {
         path("formatted_sumstats_grch37.vcf.gz"),
         path("formatted_sumstats_grch37.vcf.gz.tbi"),
         path("formatted_sumstats_grch38.vcf.gz"),
-        path("formatted_sumstats_grch38.vcf.gz.tbi")
+        path("formatted_sumstats_grch38.vcf.gz.tbi"),
+        path("liftover_log.txt")
 
     script:
     """
@@ -332,10 +344,14 @@ process LIFTOVER_SUMSTATS {
     INPUT_VCF="$formatted_sumstats"
     OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
 
+    # LOG FILE ----
+    touch liftover_log.txt
+    LOG='liftover_log.txt'
+
     # SORT & BGZIP INPUT ---- 
 
     # Sort the file (to be sure)
-    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF
+    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF >> \$LOG 2>&1
 
     # BGZip the file
     ./bgzip \$INPUT_VCF
@@ -357,40 +373,50 @@ process LIFTOVER_SUMSTATS {
 
     # Create a collapsed VCF and check REF/ALT alignment in the process
     ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
-    --check-ref ws \
-    -f \$SOURCE_REF \
-    -o input_COLLAPSED.vcf.gz
+        --check-ref ws \
+        -f \$SOURCE_REF \
+        -o input_COLLAPSED.vcf.gz \
+        >> \$LOG 2>&1
 
     # FIX VCF REF ----
 
     # Check Allele mismatches etc
-    ./bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF
+    ./bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF \
+        >> \$LOG 2>&1
 
     # LIFTOVER ----
 
     # Liftover
     ./bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o output_COLLAPSED.vcf.gz -- \
-    -s \$SOURCE_REF \
-    -f \$TARGET_REF \
-    -c \$CHAIN  \
-    --reject reject.vcf.bgz \
-    --reject-type z \
-    --write-src
+        -s \$SOURCE_REF \
+        -f \$TARGET_REF \
+        -c \$CHAIN  \
+        --reject reject.vcf.bgz \
+        --reject-type z \
+        --write-src \
+        >> \$LOG 2>&1
 
     # CHECKS ----
 
     # Check the file using bcftools
-    ./bcftools +af-dist output_COLLAPSED.vcf.gz
-    ./bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF
-    ./bcftools stats output_COLLAPSED.vcf.gz
+    ./bcftools +af-dist output_COLLAPSED.vcf.gz \
+        >> \$LOG 2>&1
+
+    ./bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF \
+        >> \$LOG 2>&1
+
+    ./bcftools stats output_COLLAPSED.vcf.gz \
+        >> \$LOG 2>&1
 
     # Sort, expand, index and save
     ./bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
-        ./bcftools  norm --no-version -Oz -m- -o output.vcf.gz
+        ./bcftools  norm --no-version -Oz -m- -o output.vcf.gz \
+        >> \$LOG 2>&1
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF
+    ./bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF \
+        >> \$LOG 2>&1
 
     # This is because bcftools does not modify in-place, apparently.
     # Clean up
@@ -409,6 +435,7 @@ process LIFTOVER_SUMSTATS {
     touch "formatted_sumstats_grch37.vcf.gz.tbi"
     touch "formatted_sumstats_grch38.vcf.gz"
     touch "formatted_sumstats_grch38.vcf.gz.tbi"
+    touch "liftover_log.txt"
     """
 
 }
@@ -435,6 +462,7 @@ process SAVE_PARQUET {
         path(formatted_sumstats_grch37_index),
         path(formatted_sumstats_grch38),
         path(formatted_sumstats_grch38_index),
+        path(liftover_log),
         path(r_lib)
 
     output:
