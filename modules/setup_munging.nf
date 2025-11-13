@@ -182,6 +182,10 @@ process CHECK_INPUT_COL_HEADERS {
       "MAC",
       "P.VALUE.GC",
       "STDERR.GC"
+      "EFFECT_ALLELE_FREQUENCY_CONTROLS",
+      "V1",
+      "P(R)",
+      "OR(R)"
     )
     unknown_colnames <- setdiff(unknown_colnames, superfluous_names)
      
