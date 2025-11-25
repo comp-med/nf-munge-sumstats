@@ -181,7 +181,7 @@ process CHECK_INPUT_COL_HEADERS {
       "EFFECT_ALLELE_FREQUENCY_CONTROLS",
       "MAC",
       "P.VALUE.GC",
-      "STDERR.GC"
+      "STDERR.GC",
       "EFFECT_ALLELE_FREQUENCY_CONTROLS",
       "V1",
       "P(R)",
