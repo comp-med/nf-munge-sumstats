@@ -1,0 +1,16 @@
+name: r
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - r-base
+  - r-fs
+  - r-data.table
+  - r-arrow
+  - bioconductor-mungesumstats
+  - bioconductor-variantannotation
+  - bioconductor-genomeinfodb
+  - bioconductor-genomicfiles
+  - bioconductor-genomicranges
+  - r-biocmanager

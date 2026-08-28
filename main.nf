@@ -5,22 +5,40 @@ nextflow.enable.dsl=2
 
 // HEADER ---------------------------------------------------------------------
 
+def startupMsg() {
 log.info """\
-===============================================================================
-nf-Munge-Sumstats
-===============================================================================
+  ===============================================================================
+  nf-Munge-Sumstats
+  ===============================================================================
 
-Created by the Computational Medicine Group | BIH @ Charité
+  Created by the Computational Medicine Group | BIH @ Charité
 
-===============================================================================
-Workflow run parameters 
-===============================================================================
-input       : ${params.input}
-outDir      : ${params.outDir}
-workDir     : ${workflow.workDir}
-===============================================================================
+  ===============================================================================
+  Workflow run parameters 
+  ===============================================================================
+  input       : ${params.input}
+  outDir      : ${params.outDir}
+  workDir     : ${workflow.workDir}
+  ===============================================================================
 
-"""
+  """.stripIndent()
+}
+
+def completionMsg() {
+  log.info """\
+  ===============================================================================
+  Workflow execution summary
+  ===============================================================================
+
+  Duration    : ${workflow.duration}
+  Success     : ${workflow.success}
+  workDir     : ${workflow.workDir}
+  Exit status : ${workflow.exitStatus}
+  outDir      : ${params.outDir}
+
+  ===============================================================================
+  """.stripIndent()
+}
 
 // Help function
 def helpMessage() {
@@ -47,18 +65,20 @@ include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
 workflow {
 
+  startupMsg()
+  if ( false ) {
+    helpMessage()
+    exit 1
+  }
+
   // Create Variables from parameters // TODO: Have all parameters here!
   def input_dir = file("$params.input")
 
-  // Where to find all R packages
-  def r_lib    = Channel.fromPath(params.local_r_library)
-
   // Where to find additional binaries // TODO: create environments
-  def bcftools_liftover_bin = Channel.fromPath(params.bcftools_liftover_bin)
-  def bgzip_bin = Channel.fromPath(params.bgzip_bin)
+  def bcftools_liftover_bin = channel.fromPath(params.bcftools_liftover_bin)
   
   // Download raw summary statistics from various sources
-  def input_files_ch  = Channel
+  def input_files_ch  = channel
       .fromPath(
           "$input_dir/**/raw_sumstat_file.*",
           followLinks: true,
@@ -68,35 +88,22 @@ workflow {
   }
 
   // Prepare additional input for liftover function
-  SETUP_MUNGING (input_files_ch, r_lib)
-  def custom_col_headers = SETUP_MUNGING.out.custom_col_headers
+  SETUP_MUNGING (input_files_ch)
+
+  def custom_col_headers = SETUP_MUNGING.out.col_headers
+  def snplocs_lib = SETUP_MUNGING.out.snplocs_lib
 
   // Main workflow: format and liftover summary statistics
-  def munged_sumstats_ch = MUNGE_SUMSTATS(
-      input_files_ch,
-      custom_col_headers,
-      r_lib,
-      bcftools_liftover_bin,
-      bgzip_bin
+  MUNGE_SUMSTATS(
+    input_files_ch,
+    custom_col_headers,
+    snplocs_lib,
+    bcftools_liftover_bin
   )
-}
 
-// SUMMARY --------------------------------------------------------------------
+  workflow.onComplete {
+      completionMsg()
+  }
 
-workflow.onComplete {
-    def summary = """\
-===============================================================================
-Workflow execution summary
-===============================================================================
-
-Duration    : ${workflow.duration}
-Success     : ${workflow.success}
-workDir     : ${workflow.workDir}
-Exit status : ${workflow.exitStatus}
-outDir      : ${params.outDir}
-
-===============================================================================
-"""
-    println summary
 }
 

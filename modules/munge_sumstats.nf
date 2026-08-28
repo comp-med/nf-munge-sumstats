@@ -4,24 +4,28 @@ process GET_GENOME_BUILD {
     cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
+    conda 'conda_envs/r.yml'
 
     input:
-    tuple val(phenotype_name), path(raw_sumstat_file), path(custom_col_headers), path(r_lib)
+    tuple val(phenotype_name), 
+        path(raw_sumstat_file), 
+        path(custom_col_headers),
+        path(snplocs_lib)
 
     output:
     tuple val(phenotype_name), path("genome_build"), path(raw_sumstat_file)
 
     script:
     """
-    #! /usr/bin/env Rscript
+    #! /usr/bin/env Rscript --vanilla
 
     # SETUP ----
-    r_lib <- "$r_lib"
-    suppressPackageStartupMessages(library("MungeSumstats", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("GenomicFiles", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("MungeSumstats")
+    suppressPackageStartupMessages(library("GenomicFiles")
+    suppressPackageStartupMessages(library("data.table")
 
     # INPUT VARIABLES ----
+    snplocs_lib <- "$snplocs_lib"
     phenotype_name <- "$phenotype_name"
     raw_sumstat_file <- "$raw_sumstat_file"
     custom_sumstatsColHeaders <- "$custom_col_headers"
@@ -46,8 +50,8 @@ process GET_GENOME_BUILD {
               "rsIDs that can be mapped with either GRCh37 or GRCh38 dbSNP."
             )
             # From: `https://support.bioconductor.org/p/9153164/`
-            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh37))
-            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh38))
+            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh37, lib.loc = snplocs_lib))
+            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh38, lib.loc = snplocs_lib))
             suppressMessages(library(GenomicRanges))
             dat <- fread(raw_sumstat_file, nrows = 5e4)
             dat <- suppressMessages(
@@ -115,10 +119,11 @@ process FORMAT_SUMSTATS {
     cache 'lenient'
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
+    conda 'conda_envs/r.yml'
     publishDir (
-        path: "${params.outDir}/formatted/${phenotype_name}/logs",
+        path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
         mode: 'copy',
-        pattern: "logs/formatted_sumstats_${genome_build}_log_msg.txt",
+        pattern: { "logs/formatted_sumstats_${genome_build}_log_msg.txt" },
 	saveAs: { _fn -> "munge_sumstats_log.txt" }
     )
 
@@ -127,8 +132,7 @@ process FORMAT_SUMSTATS {
         val(genome_build),
         val(other_genome_build),
         path(raw_sumstat_file), 
-        path(custom_col_headers),
-        path(r_lib)
+        path(custom_col_headers)
 
     output:
     tuple val(phenotype_name),
@@ -139,15 +143,14 @@ process FORMAT_SUMSTATS {
 
     script:
     """
-    #! /usr/bin/env Rscript
+    #! /usr/bin/env Rscript --vanilla
     
     # SETUP ----
-    r_lib <- "$r_lib"
-    suppressPackageStartupMessages(library("MungeSumstats", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("GenomicFiles", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("VariantAnnotation", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("GenomeInfoDb", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("MungeSumstats"))
+    suppressPackageStartupMessages(library("GenomicFiles"))
+    suppressPackageStartupMessages(library("VariantAnnotation"))
+    suppressPackageStartupMessages(library("GenomeInfoDb"))
+    suppressPackageStartupMessages(library("data.table"))
 
     # INPUT VARIABLES ----
     phenotype_name <- "$phenotype_name"
@@ -247,9 +250,6 @@ process GET_LIFTOVER_FILES {
     tag 'single_execution'
     conda 'conda_envs/samtools.yml'
 
-    input:
-    path(bgzip_bin)
-
     output:
     tuple path('hg19.fa'),
         path('hg38.fa'),
@@ -258,13 +258,7 @@ process GET_LIFTOVER_FILES {
 
     script:
     """
-    
-    # TODO: make this configuration globally
-    export http_proxy="http://proxy.charite.de:8080"
-    export https_proxy=\$http_proxy
-    export HTTPS_PROXY=\$http_proxy
-    export HTTP_PROXY=\$http_proxy
-
+   
     # Chain Files
     CHAIN1='https://hgdownload.soe.ucsc.edu/goldenPath/hg38/liftOver/hg38ToHg19.over.chain.gz'
     CHAIN2='https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
@@ -278,8 +272,8 @@ process GET_LIFTOVER_FILES {
     wget \$REF2
 
     # Unzip the reference sequences and remove the the 
-    ./bgzip -d  \$(echo "\${REF1##*/}")
-    ./bgzip -d  \$(echo "\${REF2##*/}")
+    bgzip -d  \$(echo "\${REF1##*/}")
+    bgzip -d  \$(echo "\${REF2##*/}")
     """
 
     stub:
@@ -296,7 +290,7 @@ process LIFTOVER_SUMSTATS {
     tag "$phenotype_name:$genome_build->$other_genome_build"
     conda 'conda_envs/samtools.yml'
     publishDir (
-        path: "${params.outDir}/formatted/${phenotype_name}/",
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
         mode: 'copy',
         pattern: "formatted_sumstats_grch{37,38}.vcf{.gz,.gz.tbi}",
         saveAs: { fn ->
@@ -305,7 +299,7 @@ process LIFTOVER_SUMSTATS {
         }
     )
     publishDir (
-        path: "${params.outDir}/formatted/${phenotype_name}/logs",
+        path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
         mode: 'copy',
         pattern: "liftover_log.txt"
     ) 
@@ -321,9 +315,7 @@ process LIFTOVER_SUMSTATS {
         path(hg38_reference),
         path(hg19_to_38_chain_file),
         path(hg38_to_19_chain_file),
-        path(bcftools_liftover_bin),
-        path(bgzip_bin)
-
+        path(bcftools_liftover_bin)
     output:
     tuple val(phenotype_name),
         path("formatted_sumstats_grch37.vcf.gz"),
@@ -354,7 +346,7 @@ process LIFTOVER_SUMSTATS {
     ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF >> \$LOG 2>&1
 
     # BGZip the file
-    ./bgzip \$INPUT_VCF
+    bgzip \$INPUT_VCF
     INPUT_VCF="\${INPUT_VCF}.gz"
 
     # LIFTOVER DIRECTION ----
@@ -446,8 +438,9 @@ process SAVE_PARQUET {
     cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
+    conda 'conda_envs/r.yml'
     publishDir (
-        path: "${params.outDir}/formatted/${phenotype_name}/",
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
         mode: 'copy',
         pattern: "formatted_sumstats_grch{37,38}.parquet",
 	saveAs: { fn ->
@@ -462,8 +455,7 @@ process SAVE_PARQUET {
         path(formatted_sumstats_grch37_index),
         path(formatted_sumstats_grch38),
         path(formatted_sumstats_grch38_index),
-        path(liftover_log),
-        path(r_lib)
+        path(liftover_log)
 
     output:
     tuple val(phenotype_name),
@@ -473,15 +465,14 @@ process SAVE_PARQUET {
 
     script:
     """
-    #! /usr/bin/env Rscript
+    #! /usr/bin/env Rscript --vanilla
 
     # SETUP ----
 
-    r_lib <- "$r_lib"
-    suppressPackageStartupMessages(library("data.table", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("arrow", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("VariantAnnotation", lib.loc = r_lib))
-    suppressPackageStartupMessages(library("fs", lib.loc = r_lib))
+    suppressPackageStartupMessages(library("data.table"))
+    suppressPackageStartupMessages(library("arrow"))
+    suppressPackageStartupMessages(library("VariantAnnotation"))
+    suppressPackageStartupMessages(library("fs"))
 
     # INPUT ----
 

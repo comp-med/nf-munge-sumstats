@@ -2,18 +2,18 @@ process GET_INPUT_COL_HEADERS {
     cache 'lenient'
     tag "$file_id"
     label 'rProcess'
+    conda 'conda_envs/r.yml'
     
     input:
-    tuple val(file_id), path(input_file_path), path(r_lib)
+    tuple val(file_id), path(input_file_path)
 
     output:
     path "column_headers.csv"
 
     script:
     """
-    #! /usr/bin/env Rscript
-    r_lib  <- "$r_lib"
-    library(data.table, lib.loc = r_lib)
+    #! /usr/bin/env Rscript --vanilla
+    library(data.table)
 
     input_file  <- "$input_file_path"
     file_colnames <- toupper(names(fread(input_file, nrows = 0)))
@@ -35,21 +35,21 @@ process CHECK_INPUT_COL_HEADERS {
     cache 'lenient'
     tag 'singe_execution'
     label 'rProcess'
+    conda 'conda_envs/r.yml'
     
     input:
     path column_header_table
-    path r_lib
 
     output:
     path "sumstatsColHeaders.csv"
 
     script:
     """
-    #! /usr/bin/env Rscript
+    #! /usr/bin/env Rscript --vanilla
 
     # SETUP ----
-    library(data.table, lib.loc = "$r_lib")
-    library(MungeSumstats, lib.loc = "$r_lib")
+    library(data.table)
+    library(MungeSumstats)
 
     # INPUT FILE COLUMN NAMES ----
     input_files <- unlist(
@@ -316,5 +316,37 @@ process CHECK_INPUT_COL_HEADERS {
     stub:
     """
     touch sumstatsColHeaders.csv
+    """
+}
+
+// This downloads R packages not available via conda
+process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
+    cache 'lenient'
+    tag "single_execution"
+    label 'rProcess'
+    conda 'conda_envs/r.yml'
+    
+    output:
+    path "R/"
+
+    script:
+    """
+    #! /usr/bin/env Rscript --vanilla
+
+    Sys.setenv(http_proxy  = "$params.proxy_server")
+    Sys.setenv(https_proxy = "$params.proxy_server")
+    Sys.setenv(HTTPS_PROXY = "$params.proxy_server")
+    Sys.setenv(HTTP_PROXY  = "$params.proxy_server")
+
+    library(fs)
+    local_lib <- "R"
+    fs::dir_create(local_lib)
+    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh37", lib = local_lib)
+    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh38", lib = local_lib)
+    """
+
+    stub:
+    """
+    mkdir R
     """
 }
