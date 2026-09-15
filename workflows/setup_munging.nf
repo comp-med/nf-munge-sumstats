@@ -36,7 +36,9 @@ workflow SETUP_MUNGING {
 
     // Install the liftover plugin in the stock conda env and check it
     SETUP_LIFTOVER()
-    CHECK_LIFTOVER_PLUGIN()
+    CHECK_LIFTOVER_PLUGIN(
+        SETUP_LIFTOVER.out
+    )
 
     emit:
     col_headers = CHECK_INPUT_COL_HEADERS.out

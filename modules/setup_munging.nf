@@ -361,7 +361,7 @@ process SETUP_LIFTOVER {
     conda 'conda_envs/bcftools_liftover.yml'
 
     output:
-    path('plugins/liftover.so')
+    file('plugins/liftover.so')
 
     script:
     """
@@ -398,6 +398,9 @@ process SETUP_LIFTOVER {
 process CHECK_LIFTOVER_PLUGIN {
     tag 'single_execution'
     conda 'conda_envs/bcftools_liftover.yml'
+
+    input:
+    file(plugin_file)
 
     output:
     stdout emit: plugin_check
