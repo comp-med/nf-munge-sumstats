@@ -12,7 +12,6 @@ workflow MUNGE_SUMSTATS {
     input_files_ch
     custom_col_headers
     snplocs_lib
-    bcftools_liftover_bin
 
     main:
 
@@ -53,7 +52,6 @@ workflow MUNGE_SUMSTATS {
     liftover_ch = LIFTOVER_SUMSTATS (
         formatted_files_ch
             .combine(liftover_files_ch)
-            .combine(bcftools_liftover_bin)
     )
     
     // Having the files available in a tabular format makes it more convenient

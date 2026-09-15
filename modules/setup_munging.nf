@@ -354,3 +354,63 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     mkdir R/SNPlocs.Hsapiens.dbSNP155.GRCh38
     """
 }
+
+// This modifies the bcftools conda environment to contain the liftover plugin
+process SETUP_LIFTOVER {
+    tag 'single_execution'
+    conda 'conda_envs/bcftools_liftover.yml'
+
+    output:
+    path('plugins/liftover.so')
+
+    script:
+    """
+    BCFTOOLS_VER=\$(bcftools --version | head -1 | awk '{print \$2}')
+
+    # Download bcftools and the plugin
+    wget https://github.com/samtools/bcftools/releases/download/\${BCFTOOLS_VER}/bcftools-\${BCFTOOLS_VER}.tar.bz2
+    tar xjf bcftools-\${BCFTOOLS_VER}.tar.bz2
+    cd bcftools-\${BCFTOOLS_VER}
+    wget -P plugins https://raw.githubusercontent.com/freeseek/score/master/liftover.c
+
+    # Set env for compilation
+    export CPATH=\$CONDA_PREFIX/include:\$CPATH
+    export LIBRARY_PATH=\$CONDA_PREFIX/lib:\$LIBRARY_PATH
+    export LD_LIBRARY_PATH=\$CONDA_PREFIX/lib:\$LD_LIBRARY_PATH
+
+    # Compile plugin
+    make plugins/liftover.so
+
+    mkdir -p \$CONDA_PREFIX/libexec/bcftools
+    cp plugins/liftover.so \$CONDA_PREFIX/libexec/bcftools/
+    export BCFTOOLS_PLUGINS=\$CONDA_PREFIX/libexec/bcftools
+    mkdir -p \$CONDA_PREFIX/etc/conda/activate.d
+    echo "export BCFTOOLS_PLUGINS=\$CONDA_PREFIX/libexec/bcftools" >> \$CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+    """
+
+    stub:
+    """
+    mkdir plugins
+    touch plugins/liftover.so
+    """
+}
+
+process CHECK_LIFTOVER_PLUGIN {
+    tag 'single_execution'
+    conda 'conda_envs/bcftools_liftover.yml'
+
+    output:
+    stdout emit: plugin_check
+
+    script:
+    """
+    bcftools plugin -lv 2>&1 | \
+        grep -q liftover && echo "liftover plugin OK" || \
+        (echo "liftover plugin MISSING" && exit 1)
+    """
+
+    stub:
+    """
+    echo "liftover plugin OK"
+    """
+}

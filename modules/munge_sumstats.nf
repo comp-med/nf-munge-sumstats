@@ -288,7 +288,7 @@ process LIFTOVER_SUMSTATS {
 
     cache 'lenient'
     tag "$phenotype_name:$genome_build->$other_genome_build"
-    conda 'conda_envs/samtools.yml'
+    conda 'conda_envs/bcftools_liftover.yml'
     publishDir (
         path: { "${params.outDir}/formatted/${phenotype_name}/" },
         mode: 'copy',
@@ -314,8 +314,7 @@ process LIFTOVER_SUMSTATS {
         path(hg19_reference),
         path(hg38_reference),
         path(hg19_to_38_chain_file),
-        path(hg38_to_19_chain_file),
-        path(bcftools_liftover_bin)
+        path(hg38_to_19_chain_file)
     output:
     tuple val(phenotype_name),
         path("formatted_sumstats_grch37.vcf.gz"),
@@ -343,7 +342,7 @@ process LIFTOVER_SUMSTATS {
     # SORT & BGZIP INPUT ---- 
 
     # Sort the file (to be sure)
-    ./bcftools sort \$INPUT_VCF -o \$INPUT_VCF >> \$LOG 2>&1
+    bcftools sort \$INPUT_VCF -o \$INPUT_VCF >> \$LOG 2>&1
 
     # BGZip the file
     bgzip \$INPUT_VCF
@@ -364,7 +363,7 @@ process LIFTOVER_SUMSTATS {
     # COLLAPSE VCF ----
 
     # Create a collapsed VCF and check REF/ALT alignment in the process
-    ./bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
+    bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
         --check-ref ws \
         -f \$SOURCE_REF \
         -o input_COLLAPSED.vcf.gz \
@@ -373,13 +372,13 @@ process LIFTOVER_SUMSTATS {
     # FIX VCF REF ----
 
     # Check Allele mismatches etc
-    ./bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF \
+    bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF \
         >> \$LOG 2>&1
 
     # LIFTOVER ----
 
     # Liftover
-    ./bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o output_COLLAPSED.vcf.gz -- \
+    bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o output_COLLAPSED.vcf.gz -- \
         -s \$SOURCE_REF \
         -f \$TARGET_REF \
         -c \$CHAIN  \
@@ -391,23 +390,23 @@ process LIFTOVER_SUMSTATS {
     # CHECKS ----
 
     # Check the file using bcftools
-    ./bcftools +af-dist output_COLLAPSED.vcf.gz \
+    bcftools +af-dist output_COLLAPSED.vcf.gz \
         >> \$LOG 2>&1
 
-    ./bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF \
+    bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF \
         >> \$LOG 2>&1
 
-    ./bcftools stats output_COLLAPSED.vcf.gz \
+    bcftools stats output_COLLAPSED.vcf.gz \
         >> \$LOG 2>&1
 
     # Sort, expand, index and save
-    ./bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
-        ./bcftools  norm --no-version -Oz -m- -o output.vcf.gz \
+    bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
+        bcftools  norm --no-version -Oz -m- -o output.vcf.gz \
         >> \$LOG 2>&1
 
     # INFO Column of output file contains content that his difficult
     # to parse downstream. I'll remove it
-    ./bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF \
+    bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF \
         >> \$LOG 2>&1
 
     # This is because bcftools does not modify in-place, apparently.
@@ -417,8 +416,8 @@ process LIFTOVER_SUMSTATS {
     rm input_COLLAPSED.vcf.gz
 
     # create index
-    ./bcftools index -f --tbi \$INPUT_VCF
-    ./bcftools index -f --tbi \$OUTPUT_VCF
+    bcftools index -f --tbi \$INPUT_VCF
+    bcftools index -f --tbi \$OUTPUT_VCF
     """
     
     stub:

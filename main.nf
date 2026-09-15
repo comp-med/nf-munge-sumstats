@@ -71,12 +71,8 @@ workflow {
     exit 1
   }
 
-  // Create Variables from parameters // TODO: Have all parameters here!
   def input_dir = file("$params.input")
 
-  // Where to find additional binaries // TODO: create environments
-  def bcftools_liftover_bin = channel.fromPath(params.bcftools_liftover_bin)
-  
   // Download raw summary statistics from various sources
   def input_files_ch  = channel
       .fromPath(
@@ -97,8 +93,7 @@ workflow {
   MUNGE_SUMSTATS(
     input_files_ch,
     custom_col_headers,
-    snplocs_lib,
-    bcftools_liftover_bin
+    snplocs_lib 
   )
 
   workflow.onComplete {

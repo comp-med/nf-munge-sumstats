@@ -1,0 +1,13 @@
+name: bcftools_liftover
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - bcftools
+  - htslib
+  - gcc
+  - gxx
+  - make
+  - wget
+
