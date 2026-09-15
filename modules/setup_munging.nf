@@ -328,6 +328,8 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     
     output:
     path "R/"
+    path "R/SNPlocs.Hsapiens.dbSNP155.GRCh37"
+    path "R/SNPlocs.Hsapiens.dbSNP155.GRCh38"
 
     script:
     """
@@ -348,5 +350,7 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     stub:
     """
     mkdir R
+    mkdir R/SNPlocs.Hsapiens.dbSNP155.GRCh37
+    mkdir R/SNPlocs.Hsapiens.dbSNP155.GRCh38
     """
 }

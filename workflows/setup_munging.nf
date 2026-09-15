@@ -34,6 +34,6 @@ workflow SETUP_MUNGING {
 
     emit:
     col_headers = CHECK_INPUT_COL_HEADERS.out
-    snplocs_lib = DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES.out
+    snplocs_lib = DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES.out[0] // Only base dir
 
 }
