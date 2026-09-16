@@ -40,6 +40,7 @@ workflow MUNGE_SUMSTATS {
     formatted_files_ch = FORMAT_SUMSTATS (
         input_files_ch
             .combine(custom_col_headers)
+            .combine(snplocs_lib)
     )
 
     // Liftover required chain files and reference sequences. 

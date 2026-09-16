@@ -20,9 +20,9 @@ process GET_GENOME_BUILD {
     #! /usr/bin/env Rscript --vanilla
 
     # SETUP ----
-    suppressPackageStartupMessages(library("MungeSumstats")
-    suppressPackageStartupMessages(library("GenomicFiles")
-    suppressPackageStartupMessages(library("data.table")
+    suppressPackageStartupMessages(library("MungeSumstats"))
+    suppressPackageStartupMessages(library("GenomicFiles"))
+    suppressPackageStartupMessages(library("data.table"))
 
     # INPUT VARIABLES ----
     snplocs_lib <- "$snplocs_lib"
@@ -30,6 +30,8 @@ process GET_GENOME_BUILD {
     raw_sumstat_file <- "$raw_sumstat_file"
     custom_sumstatsColHeaders <- "$custom_col_headers"
     
+    .libPaths(c(.libPaths(), snplocs_lib))
+
     # INPUT PREP ----
     custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
     setDF(custom_sumstatsColHeaders)
@@ -132,7 +134,8 @@ process FORMAT_SUMSTATS {
         val(genome_build),
         val(other_genome_build),
         path(raw_sumstat_file), 
-        path(custom_col_headers)
+        path(custom_col_headers),
+        path(snplocs_lib)
 
     output:
     tuple val(phenotype_name),
@@ -167,6 +170,9 @@ process FORMAT_SUMSTATS {
     custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
     setDF(custom_sumstatsColHeaders)
     dir.create("./logs", showWarnings = FALSE)
+
+    snplocs_lib <- "$snplocs_lib"
+    .libPaths(c(.libPaths(), snplocs_lib))
 
     # FORMATTING ----
     sumstats <- MungeSumstats::format_sumstats(
