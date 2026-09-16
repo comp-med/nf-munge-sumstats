@@ -330,6 +330,8 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     path "R/"
     path "R/SNPlocs.Hsapiens.dbSNP155.GRCh37"
     path "R/SNPlocs.Hsapiens.dbSNP155.GRCh38"
+    path "R/BSgenome.Hsapiens.1000genomes.hs37d5"
+    path "R/BSgenome.Hsapiens.NCBI.GRCh38"
 
     script:
     """
@@ -343,8 +345,10 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     library(fs)
     local_lib <- "R"
     fs::dir_create(local_lib)
-    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh37", lib = local_lib)
-    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh38", lib = local_lib)
+    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh37", lib = local_lib, method = "wget")
+    BiocManager::install("SNPlocs.Hsapiens.dbSNP155.GRCh38", lib = local_lib, method = "wget")
+    BiocManager::install("BSgenome.Hsapiens.1000genomes.hs37d5", lib = local_lib, method = "wget")
+    BiocManager::install("BSgenome.Hsapiens.NCBI.GRCh38", lib = local_lib, method = "wget")
     """
 
     stub:
@@ -352,6 +356,8 @@ process DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES {
     mkdir R
     mkdir R/SNPlocs.Hsapiens.dbSNP155.GRCh37
     mkdir R/SNPlocs.Hsapiens.dbSNP155.GRCh38
+    mkdir R/BSgenome.Hsapiens.1000genomes.hs37d5
+    mkdir R/BSgenome.Hsapiens.NCBI.GRCh38
     """
 }
 
@@ -361,7 +367,7 @@ process SETUP_LIFTOVER {
     conda 'conda_envs/bcftools_liftover.yml'
 
     output:
-    file('plugins/liftover.so')
+    file('bcftools/plugins/liftover.so')
 
     script:
     """
@@ -370,8 +376,14 @@ process SETUP_LIFTOVER {
     # Download bcftools and the plugin
     wget https://github.com/samtools/bcftools/releases/download/\${BCFTOOLS_VER}/bcftools-\${BCFTOOLS_VER}.tar.bz2
     tar xjf bcftools-\${BCFTOOLS_VER}.tar.bz2
-    cd bcftools-\${BCFTOOLS_VER}
+    mv bcftools-\${BCFTOOLS_VER} bcftools
+    cd bcftools
     wget -P plugins https://raw.githubusercontent.com/freeseek/score/master/liftover.c
+
+    # Give defaults to avoid unbound variable error
+    : "\${CPATH=}"
+    : "\${LIBRARY_PATH=}"
+    : "\${LD_LIBRARY_PATH=}"
 
     # Set env for compilation
     export CPATH=\$CONDA_PREFIX/include:\$CPATH
@@ -390,8 +402,8 @@ process SETUP_LIFTOVER {
 
     stub:
     """
-    mkdir plugins
-    touch plugins/liftover.so
+    mkdir -p bcftools/plugins
+    touch bcftools/plugins/liftover.so
     """
 }
 
