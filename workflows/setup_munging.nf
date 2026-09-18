@@ -13,6 +13,8 @@ workflow SETUP_MUNGING {
 
     take: 
     input_files_ch
+    corrected_column_names
+    redundant_column_names
 
     main:
 
@@ -30,6 +32,8 @@ workflow SETUP_MUNGING {
 
     CHECK_INPUT_COL_HEADERS (
         input_files_ch
+          .combine(corrected_column_names)
+          .combine(redundant_column_names)
     )
 
     DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES()

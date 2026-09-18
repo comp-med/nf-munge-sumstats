@@ -73,6 +73,9 @@ workflow {
 
   def input_dir = file("$params.input")
 
+  def corrected_column_names = channel.fromPath(params.corrected_column_names)
+  def redundant_column_names = channel.fromPath(params.redundant_column_names)
+
   // Download raw summary statistics from various sources
   def input_files_ch  = channel
       .fromPath(
@@ -84,7 +87,11 @@ workflow {
   }
 
   // Prepare additional input for liftover function
-  SETUP_MUNGING (input_files_ch)
+  SETUP_MUNGING (
+    input_files_ch,
+    corrected_column_names,
+    redundant_column_names
+  )
 
   def custom_col_headers = SETUP_MUNGING.out.col_headers
   def snplocs_lib = SETUP_MUNGING.out.snplocs_lib
