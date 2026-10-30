@@ -40,7 +40,8 @@ process CHECK_INPUT_COL_HEADERS {
     input:
     tuple path(column_header_table), 
       path(corrected_column_names), 
-      path(redundant_column_names)
+      path(redundant_column_names),
+      path(log_pvalue_column_names)
 
     output:
     path "sumstatsColHeaders.csv"
@@ -55,6 +56,7 @@ process CHECK_INPUT_COL_HEADERS {
 
     corrected_column_names_path <- "$corrected_column_names"
     redundant_column_names_path <- "$redundant_column_names"
+    log_pvalue_column_names_path <- "$log_pvalue_column_names"
 
     # INPUT FILE COLUMN NAMES ----
     input_files <- unlist(
@@ -79,7 +81,7 @@ process CHECK_INPUT_COL_HEADERS {
     )
     superfluous_names <- fread(redundant_column_names_path)[[1]]
     unknown_colnames <- setdiff(unknown_colnames, superfluous_names)
-     
+
     # CUSTOM MAPPING TABLE ----
     matching_table_unmatched <- fread(corrected_column_names_path)
 
@@ -88,6 +90,15 @@ process CHECK_INPUT_COL_HEADERS {
         unknown_colnames,
         matching_table_unmatched\$Uncorrected
     )
+ 
+    # CHECK FOR LOG10P VALUES ----
+
+    logp_colnames <- fread(log_pvalue_column_names_path)[[1]]
+    unknown_colnames <- setdiff(
+        unknown_colnames,
+        logp_colnames
+    )
+
     if (length(unknown_colnames) != 0) {
       fwrite(data.table(unknown_colnames), "unknown_colnames.csv")
       message("Unknown column headers detected!")

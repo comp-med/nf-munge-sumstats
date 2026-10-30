@@ -75,6 +75,7 @@ workflow {
 
   def corrected_column_names = channel.fromPath(params.corrected_column_names)
   def redundant_column_names = channel.fromPath(params.redundant_column_names)
+  def log_pvalue_column_names = channel.fromPath(params.log_pvalue_column_names)
 
   // Download raw summary statistics from various sources
   def input_files_ch  = channel
@@ -90,7 +91,8 @@ workflow {
   SETUP_MUNGING (
     input_files_ch,
     corrected_column_names,
-    redundant_column_names
+    redundant_column_names,
+    log_pvalue_column_names
   )
 
   def custom_col_headers = SETUP_MUNGING.out.col_headers

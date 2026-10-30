@@ -15,6 +15,7 @@ workflow SETUP_MUNGING {
     input_files_ch
     corrected_column_names
     redundant_column_names
+    log_pvalue_column_names
 
     main:
 
@@ -34,6 +35,7 @@ workflow SETUP_MUNGING {
         input_files_ch
           .combine(corrected_column_names)
           .combine(redundant_column_names)
+          .combine(log_pvalue_column_names)
     )
 
     DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES()
