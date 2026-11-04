@@ -289,6 +289,61 @@ process GET_LIFTOVER_FILES {
 
 }
 
+// When file is already in output format, do not perform liftover
+process NO_LIFTOVER_SUMSTATS {
+    cache 'lenient'
+    tag "$phenotype_name:$genome_build"
+    conda 'conda_envs/bcftools_liftover.yml'
+    publishDir (
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}",
+        saveAs: { fn -> "grch37/${fn}"
+        },
+        enabled: params.publish_grch37 & params.publish_vcf
+    )
+    publishDir (
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}",
+        saveAs: { fn -> "grch38/${fn}"
+        },
+        enabled: params.publish_grch38 & params.publish_vcf
+    )
+
+    input:
+    tuple val(phenotype_name),
+        val(genome_build),
+        val(other_genome_build),
+        path(formatted_sumstats),
+        path(munging_log)
+    output:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path("formatted_sumstats_${genome_build}.vcf.gz"),
+        path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
+
+    script:
+    """
+    INPUT_VCF="$formatted_sumstats"
+
+    # Sort, expand, index and save
+    bcftools  sort -Oz \$INPUT_VCF | \
+        bcftools  norm --no-version -Oz -m- | \
+    bcftools annotate -x INFO -Oz -o output.vcf.gz
+
+    mv output.vcf.gz \$INPUT_VCF
+
+    # create index
+    bcftools index -f --tbi \$INPUT_VCF
+    """
+    stub:
+    """
+    touch "formatted_sumstats_${genome_build}.vcf.gz"
+    touch "formatted_sumstats_${genome_build}.vcf.gz.tbi"
+    """
+}
+
 // Liftover summary statistics from given assembly to the other one
 process LIFTOVER_SUMSTATS {
 
@@ -298,18 +353,24 @@ process LIFTOVER_SUMSTATS {
     publishDir (
         path: { "${params.outDir}/formatted/${phenotype_name}/" },
         mode: 'copy',
-        pattern: "formatted_sumstats_grch{37,38}.vcf{.gz,.gz.tbi}",
-        saveAs: { fn ->
-            if (fn.contains("grch38")) {"grch38/${fn}"}
-            else {"grch37/${fn}"}
-        }
+        pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}",
+        saveAs: { fn -> "grch37/${fn}"
+        },
+        enabled: params.publish_grch37 & params.publish_vcf
+    )
+    publishDir (
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}",
+        saveAs: { fn -> "grch38/${fn}"
+        },
+        enabled: params.publish_grch38 & params.publish_vcf
     )
     publishDir (
         path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
         mode: 'copy',
         pattern: "liftover_log.txt"
     ) 
-        
 
     input:
     tuple val(phenotype_name),
@@ -323,6 +384,8 @@ process LIFTOVER_SUMSTATS {
         path(hg38_to_19_chain_file)
     output:
     tuple val(phenotype_name),
+        val(genome_build),
+        val(other_genome_build),
         path("formatted_sumstats_grch37.vcf.gz"),
         path("formatted_sumstats_grch37.vcf.gz.tbi"),
         path("formatted_sumstats_grch38.vcf.gz"),
@@ -447,25 +510,29 @@ process SAVE_PARQUET {
     publishDir (
         path: { "${params.outDir}/formatted/${phenotype_name}/" },
         mode: 'copy',
-        pattern: "formatted_sumstats_grch{37,38}.parquet",
-	saveAs: { fn ->
-	    if (fn.endsWith("grch38.parquet")) {"grch38/${fn}"}
-	    else {"grch37/${fn}"}
-	}
+        pattern: "formatted_sumstats_grch37.parquet",
+        saveAs: { fn -> "grch37/${fn}"
+        },
+        enabled: params.publish_grch37 & params.publish_parquet
+    )
+    publishDir (
+        path: { "${params.outDir}/formatted/${phenotype_name}/" },
+        mode: 'copy',
+        pattern: "formatted_sumstats_grch38.parquet",
+        saveAs: { fn -> "grch38/${fn}"
+        },
+        enabled: params.publish_grch38 & params.publish_parquet
     )
 
     input:
     tuple val(phenotype_name),
-        path(formatted_sumstats_grch37),
-        path(formatted_sumstats_grch37_index),
-        path(formatted_sumstats_grch38),
-        path(formatted_sumstats_grch38_index),
-        path(liftover_log)
+        val(genome_build),
+        path(formatted_sumstats),
+        path(formatted_sumstats_index)
 
     output:
     tuple val(phenotype_name),
-        path("formatted_sumstats_grch37.parquet"),
-        path("formatted_sumstats_grch38.parquet")
+        path("formatted_sumstats_${genome_build}.parquet")
 
 
     script:
@@ -481,29 +548,21 @@ process SAVE_PARQUET {
 
     # INPUT ----
 
-    sumstats_grch37_file <- "$formatted_sumstats_grch37"
-    sumstats_grch38_file <- "$formatted_sumstats_grch38"
+    sumstats_file <- "$formatted_sumstats"
 
     # CONVERT & ANNOTATE ----
 
-    sumstats_files <- c(
-      sumstats_grch37_file, 
-      sumstats_grch38_file
-    )
-
-    for (i in seq_along(sumstats_files)) {
-      
-      parquet_file_name <- fs::path_ext_set(
+    parquet_file_name <- fs::path_ext_set(
+      fs::path_ext_remove(
         fs::path_ext_remove(
-          fs::path_ext_remove(
-            fs::path_file(
-              sumstats_files[i]
-            )
+          fs::path_file(
+            sumstats_file
           )
-        ), "parquet"
-      )
-      
-    sumstats <- VariantAnnotation::readVcf(sumstats_files[i])
+        )
+      ), "parquet"
+    )
+    
+    sumstats <- VariantAnnotation::readVcf(sumstats_file)
     sumstats <- MungeSumstats:::vcf2df(
       sumstats, 
       add_sample_names = FALSE, 
@@ -549,7 +608,6 @@ process SAVE_PARQUET {
         sumstats,
         parquet_file_name, 
       )
-    }
     # REFERENCE ----
 
     # https://github.com/Bioconductor/VariantAnnotation/issues/57
@@ -557,7 +615,7 @@ process SAVE_PARQUET {
 
     stub:
     """
-    touch formatted_sumstats_grch37.parquet formatted_sumstats_grch38.parquet
+    touch formatted_sumstats_${genome_build}.parquet
     """
 
 }

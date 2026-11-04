@@ -47,11 +47,12 @@ def helpMessage() {
 
   Required Arguments:
 
-  <TODO>
+  --input         Directory containing the raw summary statistic files
 
   Optional Arguments:
 
-  --outDir	Specify path to output directory. Default is `output/`
+  --outDir	  Specify path to output directory. Default is `output/`
+  --proxy_server  When running pipeline in a network with a proxy, specify here
 	
 """.stripIndent()
 }
@@ -66,7 +67,7 @@ include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 workflow {
 
   startupMsg()
-  if ( false ) {
+  if ( params.input == null ) {
     helpMessage()
     exit 1
   }
