@@ -125,7 +125,7 @@ process FORMAT_SUMSTATS {
     publishDir (
         path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
         mode: 'copy',
-        pattern: { "logs/formatted_sumstats_${genome_build}_log_msg.txt" },
+        pattern: "formatted_sumstats_grch{37,38}_log_msg.txt" ,
 	saveAs: { _fn -> "munge_sumstats_log.txt" }
     )
 
@@ -135,14 +135,15 @@ process FORMAT_SUMSTATS {
         val(other_genome_build),
         path(raw_sumstat_file), 
         path(custom_col_headers),
-        path(snplocs_lib)
+        path(snplocs_lib),
+	path(log_pvalue_column_names_file)
 
     output:
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
         path("formatted_sumstats_${genome_build}.vcf"),
-        path("logs/formatted_sumstats_${genome_build}_log_msg.txt")
+        path("formatted_sumstats_${genome_build}_log_msg.txt")
 
     script:
     """
@@ -169,10 +170,12 @@ process FORMAT_SUMSTATS {
     custom_sumstatsColHeaders <- "$custom_col_headers"
     custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
     setDF(custom_sumstatsColHeaders)
-    dir.create("./logs", showWarnings = FALSE)
 
     snplocs_lib <- "$snplocs_lib"
     .libPaths(c(.libPaths(), snplocs_lib))
+
+    log_pvalue_column_names_file <- "$log_pvalue_column_names_file"
+    log_pvalue_column_names <- fread(log_pvalue_column_names_file)\$col_names
 
     # FORMATTING ----
     sumstats <- MungeSumstats::format_sumstats(
@@ -205,7 +208,7 @@ process FORMAT_SUMSTATS {
         
         mapping_file = custom_sumstatsColHeaders, 
         nThread = 20,
-        log_folder = "./logs/",
+        log_folder = "./",
         log_mungesumstats_msgs = TRUE,
         imputation_ind = TRUE,
         log_folder_ind = FALSE,
@@ -216,7 +219,7 @@ process FORMAT_SUMSTATS {
     sumstats <- sumstats\$sumstats
     
     # Remove all column names that are not expected in a GWAS-VCF
-    canonical_colnames <- unique(custom_sumstatsColHeaders\$Corrected)
+    canonical_colnames <- c(unique(custom_sumstatsColHeaders\$Corrected), log_pvalue_column_names)
     non_canonical_colnames <- setdiff(
       names(elementMetadata(sumstats)),
       canonical_colnames
@@ -224,6 +227,21 @@ process FORMAT_SUMSTATS {
     if (length(non_canonical_colnames) > 0) {
       for (i in non_canonical_colnames)
           elementMetadata(sumstats)[[i]] <- NULL
+    }
+
+    # Rename existing Log10P column or create it
+    format_cols <- names(mcols(sumstats))
+    lp_old <- format_cols[format_cols %in% log_pvalue_column_names]
+    lp_new <- "LOG10P"
+    names(lp_new) <- lp_old
+    if (length(lp_old) == 1) {
+      mcols(sumstats) <- rename(mcols(sumstats), lp_new)
+    } else {
+      new_lp_col <- list("LOG10P" = -log10(mcols(sumstats)\$P))
+      mcols(sumstats) <- cbind(
+        mcols(sumstats),
+        new_lp_col
+        )
     }
 
     # CLEANUP ----
@@ -243,8 +261,7 @@ process FORMAT_SUMSTATS {
     stub:
     """
     touch "formatted_sumstats_${genome_build}.vcf"
-    mkdir -p logs
-    touch "logs/formatted_sumstats_${genome_build}_log_msg.txt"
+    touch "formatted_sumstats_${genome_build}_log_msg.txt"
     """
 
 }
@@ -326,16 +343,15 @@ process NO_LIFTOVER_SUMSTATS {
     script:
     """
     INPUT_VCF="$formatted_sumstats"
+    OUTPUT_VCF="\${INPUT_VCF}.gz"
 
     # Sort, expand, index and save
-    bcftools  sort -Oz \$INPUT_VCF | \
-        bcftools  norm --no-version -Oz -m- | \
-    bcftools annotate -x INFO -Oz -o output.vcf.gz
-
-    mv output.vcf.gz \$INPUT_VCF
+    bcftools  sort -Ou \$INPUT_VCF | \
+        bcftools  norm --no-version -Ou -m- | \
+    bcftools annotate -x INFO -Oz -o \$OUTPUT_VCF
 
     # create index
-    bcftools index -f --tbi \$INPUT_VCF
+    bcftools index -f --tbi \$OUTPUT_VCF
     """
     stub:
     """

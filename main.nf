@@ -103,7 +103,8 @@ workflow {
   MUNGE_SUMSTATS(
     input_files_ch,
     custom_col_headers,
-    snplocs_lib 
+    snplocs_lib,
+    log_pvalue_column_names
   )
 
   workflow.onComplete {

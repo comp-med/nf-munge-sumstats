@@ -13,6 +13,7 @@ workflow MUNGE_SUMSTATS {
     input_files_ch
     custom_col_headers
     snplocs_lib
+    log_pvalue_column_names
 
     main:
 
@@ -42,6 +43,7 @@ workflow MUNGE_SUMSTATS {
         input_files_ch
             .combine(custom_col_headers)
             .combine(snplocs_lib)
+            .combine(log_pvalue_column_names)
     )
 
     // Make sure any genome build is selected
