@@ -234,8 +234,14 @@ process FORMAT_SUMSTATS {
     lp_old <- format_cols[format_cols %in% log_pvalue_column_names]
     lp_new <- "LOG10P"
     names(lp_new) <- lp_old
+
+    # TODO: In case this is >1, Not sure what to expect or to do
     if (length(lp_old) == 1) {
       mcols(sumstats) <- rename(mcols(sumstats), lp_new)
+      
+      # Make sure the column is positive (converting log10P to -log10P
+      mcols(munged_data)[[lp_new]] <- abs(mcols(munged_data)[[lp_new]])
+
     } else {
       new_lp_col <- list("LOG10P" = -log10(mcols(sumstats)\$P))
       mcols(sumstats) <- cbind(
