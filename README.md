@@ -13,6 +13,7 @@ The pipeline covers the following steps:
 1. Format summary statistics according to GWAS-VCF standard using the
    [`MungeSumstats`](https://academic.oup.com/bioinformatics/article/37/23/4593/6380562)
    R-package
+   - This includes annotating RSIDs of all SNVs to dbSNP v155
 2. Based on raw data reference genome alignment, liftover formatted file to the
    other reference genome (either GRCh37 or GRCh38) using
    [`bcftools\liftover`](https://academic.oup.com/bioinformatics/article/40/2/btae038/7585532)

@@ -10,4 +10,5 @@ dependencies:
   - gxx
   - make
   - wget
+  - sed
 

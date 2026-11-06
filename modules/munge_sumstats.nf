@@ -345,10 +345,17 @@ process NO_LIFTOVER_SUMSTATS {
     INPUT_VCF="$formatted_sumstats"
     OUTPUT_VCF="\${INPUT_VCF}.gz"
 
-    # Sort, expand, index and save
-    bcftools  sort -Ou \$INPUT_VCF | \
+    # Small pvalues will underflow to 0 since float are 32bit
+    # Saving them as String retains the value
+    bcftools view -h "\$INPUT_VCF" | \
+        sed -E '/^##FORMAT=<ID=P,/ s/Type=Float/Type=String/' > \
+        new_header.txt
+
+    # Re-header, sort, expand, index and save
+    bcftools reheader -h new_header.txt "\$INPUT_VCF" | \
+        bcftools  sort -Ou | \
         bcftools  norm --no-version -Ou -m- | \
-    bcftools annotate -x INFO -Oz -o \$OUTPUT_VCF
+        bcftools annotate -x INFO -Oz -o \$OUTPUT_VCF
 
     # create index
     bcftools index -f --tbi \$OUTPUT_VCF
@@ -426,8 +433,15 @@ process LIFTOVER_SUMSTATS {
 
     # SORT & BGZIP INPUT ---- 
 
-    # Sort the file (to be sure)
-    bcftools sort \$INPUT_VCF -o \$INPUT_VCF >> \$LOG 2>&1
+    # Small pvalues will underflow to 0 since float are 32bit
+    # Saving them as String retains the value
+    bcftools view -h "\$INPUT_VCF" | \
+        sed -E '/^##FORMAT=<ID=P,/ s/Type=Float/Type=String/' > \
+        new_header.txt
+
+    # Re-header, sort, expand, index and save
+    bcftools reheader -h new_header.txt "\$INPUT_VCF" | \
+        bcftools sort -o \$INPUT_VCF >> \$LOG 2>&1
 
     # BGZip the file
     bgzip \$INPUT_VCF
