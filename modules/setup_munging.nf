@@ -93,7 +93,7 @@ process CHECK_INPUT_COL_HEADERS {
  
     # CHECK FOR LOG10P VALUES ----
 
-    logp_colnames <- fread(log_pvalue_column_names_path)[[1]]
+    logp_colnames <- fread(log_pvalue_column_names_path, sep = "\t")[[1]]
     unknown_colnames <- setdiff(
         unknown_colnames,
         logp_colnames

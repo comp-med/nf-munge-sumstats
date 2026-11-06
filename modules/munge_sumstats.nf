@@ -195,6 +195,7 @@ process FORMAT_SUMSTATS {
         impute_beta = TRUE,
         impute_se = TRUE,
         ignore_multi_trait = TRUE,
+	convert_small_p = FALSE,
         
         indels = TRUE,
         drop_indels = FALSE,
