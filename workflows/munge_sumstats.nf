@@ -4,7 +4,9 @@ include {
     GET_LIFTOVER_FILES;
     LIFTOVER_SUMSTATS;
     NO_LIFTOVER_SUMSTATS;
-    SAVE_PARQUET;
+    CREATE_PARQUET;
+    CHECK_PARQUET;
+    SAVE_VCF
 } from '../modules/munge_sumstats.nf'
 
 workflow MUNGE_SUMSTATS {
@@ -39,12 +41,13 @@ workflow MUNGE_SUMSTATS {
     }
 
     // Format files in their current genome build
-    formatted_files_ch = FORMAT_SUMSTATS (
+    FORMAT_SUMSTATS (
         input_files_ch
             .combine(custom_col_headers)
             .combine(snplocs_lib)
             .combine(log_pvalue_column_names)
     )
+    formatted_files_ch = FORMAT_SUMSTATS.out.files
 
     // Make sure any genome build is selected
     if (params.publish_grch37 == false & params.publish_grch38 == false) {
@@ -89,20 +92,20 @@ workflow MUNGE_SUMSTATS {
     
     // Liftover formatted summary statistics from one genome build into the other
     // so either grch37 -> grch38 or the other way around
-    liftover_ch = LIFTOVER_SUMSTATS (
+    LIFTOVER_SUMSTATS (
         formatted_files_ch.liftover
             .combine(liftover_files_ch)
-    ).flatMap { phenotype_name, 
-                _genome_build, 
-                _other_genome_build, 
-                grch37_vcf, 
-                grch37_index, 
-                grch38_vcf, 
-                grch38_index, 
-                _log -> 
+    )
+    
+    liftover_ch = LIFTOVER_SUMSTATS.out.files.flatMap { 
+        phenotype_name, 
+        _genome_build, 
+        _other_genome_build, 
+        grch37_vcf, 
+        grch38_vcf -> 
         [ 
-          [phenotype_name, "grch37", grch37_vcf, grch37_index], 
-          [phenotype_name, "grch38", grch38_vcf, grch38_index] 
+          [phenotype_name, "grch37", grch37_vcf], 
+          [phenotype_name, "grch38", grch38_vcf] 
         ]
         }
 
@@ -111,13 +114,25 @@ workflow MUNGE_SUMSTATS {
         formatted_files_ch.no_liftover
     )
 
+    // combine the channels again
+    liftover_ch = liftover_ch.concat(no_liftover_ch)
+    
     // Having the files available in a tabular format makes it more convenient
     // Therefore, saving everything in parquet makes sense
-    if (params.publish_parquet == true) {
+    CREATE_PARQUET (liftover_ch)
+    CHECK_PARQUET ( CREATE_PARQUET.out.combine(snplocs_lib)
+    )
+    
+    if (params.publish_vcf == true) {
+        SAVE_VCF( CHECK_PARQUET.out.parquet.combine(snplocs_lib) )
 
-        // combine the channels again
-        liftover_ch = liftover_ch.concat(no_liftover_ch)
-
-        SAVE_PARQUET (liftover_ch)
     }
+
+    emit:
+    parquet = CHECK_PARQUET.out.parquet
+    rejected = CHECK_PARQUET.out.rejected
+    vcf = SAVE_VCF.out
+    format_log = FORMAT_SUMSTATS.out.log
+    liftover_log = LIFTOVER_SUMSTATS.out.log
+
 }

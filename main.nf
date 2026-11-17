@@ -66,7 +66,9 @@ include { MUNGE_SUMSTATS } from './workflows/munge_sumstats.nf'
 
 workflow {
 
-  startupMsg()
+  main:
+
+  if (params.verbose == true ) startupMsg()
   if ( params.input == null ) {
     helpMessage()
     exit 1
@@ -107,9 +109,64 @@ workflow {
     log_pvalue_column_names
   )
 
-  workflow.onComplete {
-      completionMsg()
+  if (params.verbose == true ) {
+    workflow.onComplete {
+        completionMsg()
+    }
   }
+  
+  publish:
+    parquet = MUNGE_SUMSTATS.out.parquet
+    rejected = MUNGE_SUMSTATS.out.rejected
+    vcf = MUNGE_SUMSTATS.out.vcf
+    format_log = MUNGE_SUMSTATS.out.format_log
+    liftover_log = MUNGE_SUMSTATS.out.liftover_log
 
 }
 
+// OUTPUTS -------------------------------------------------------------
+
+output {
+      parquet {
+        enabled params.publish_parquet
+        path { pheno, build, file -> 
+        [ (file): "formatted/${pheno}/${build}/" ] 
+        }
+        mode 'copy'
+    }
+    vcf {
+        enabled params.publish_vcf
+        path { pheno, build, file, index -> [
+           (file): "formatted/${pheno}/${build}/",
+           (index): "formatted/${pheno}/${build}/" 
+           ] }
+        mode 'copy'
+    }
+    format_log {
+        path { pheno, file -> [
+          (file): "formatted/${pheno}/logs/"
+        ] }
+        mode 'copy'
+    }
+    liftover_log {
+        path { pheno, file, rejected -> [
+          (file): "formatted/${pheno}/logs/",
+          (rejected): "formatted/${pheno}/rejected/"
+
+        ] }
+        mode 'copy'
+    }
+    rejected {
+        path { pheno, file -> [
+          (file): "formatted/${pheno}/rejected/"
+        ] }
+        mode 'copy'
+    }
+
+}
+
+
+
+    
+    //format_logs = formatted_files_log_ch.out
+    //liftover_logs = liftover_log_ch.out

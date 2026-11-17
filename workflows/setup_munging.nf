@@ -5,8 +5,6 @@ include {
     CHECK_INPUT_COL_HEADERS;
     GET_INPUT_COL_HEADERS;
     DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES
-    SETUP_LIFTOVER
-    CHECK_LIFTOVER_PLUGIN
 } from '../modules/setup_munging.nf'
 
 workflow SETUP_MUNGING {
@@ -39,12 +37,6 @@ workflow SETUP_MUNGING {
     )
 
     DOWNLOAD_BIOCONDUCTOR_DEPENDENCIES()
-
-    // Install the liftover plugin in the stock conda env and check it
-    SETUP_LIFTOVER()
-    CHECK_LIFTOVER_PLUGIN(
-        SETUP_LIFTOVER.out
-    )
 
     emit:
     col_headers = CHECK_INPUT_COL_HEADERS.out

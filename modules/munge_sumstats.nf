@@ -17,95 +17,12 @@ process GET_GENOME_BUILD {
 
     script:
     """
-    #! /usr/bin/env Rscript --vanilla
-
-    # SETUP ----
-    suppressPackageStartupMessages(library("MungeSumstats"))
-    suppressPackageStartupMessages(library("GenomicFiles"))
-    suppressPackageStartupMessages(library("data.table"))
-
-    # INPUT VARIABLES ----
-    snplocs_lib <- "$snplocs_lib"
-    phenotype_name <- "$phenotype_name"
-    raw_sumstat_file <- "$raw_sumstat_file"
-    custom_sumstatsColHeaders <- "$custom_col_headers"
-    
-    .libPaths(c(.libPaths(), snplocs_lib))
-
-    # INPUT PREP ----
-    custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
-    setDF(custom_sumstatsColHeaders)
-    
-    # MAIN ----
-    file_genome_build <- tryCatch(
-        MungeSumstats:::get_genome_build(
-            raw_sumstat_file,
-            mapping_file = custom_sumstatsColHeaders,
-            header_only = TRUE,
-            sampled_snps = 50000,
-            dbSNP = 155,
-            nThread = as.numeric("$task.cpus")
-        ),
-        error = function(cnd) {
-            message(
-              "Trying to impute genome build by comparing number of ",
-              "rsIDs that can be mapped with either GRCh37 or GRCh38 dbSNP."
-            )
-            # From: `https://support.bioconductor.org/p/9153164/`
-            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh37, lib.loc = snplocs_lib))
-            suppressMessages(library(SNPlocs.Hsapiens.dbSNP155.GRCh38, lib.loc = snplocs_lib))
-            suppressMessages(library(GenomicRanges))
-            dat <- fread(raw_sumstat_file, nrows = 5e4)
-            dat <- suppressMessages(
-              MungeSumstats::standardise_header(
-                dat,
-                mapping_file = custom_sumstatsColHeaders, 
-                return_list = FALSE
-              ))
-            gr <- suppressMessages(MungeSumstats:::to_granges(dat))
-            known_snps_b37 <- snpsByOverlaps(SNPlocs.Hsapiens.dbSNP155.GRCh37, gr)
-            known_snps_b38 <- snpsByOverlaps(SNPlocs.Hsapiens.dbSNP155.GRCh38, gr)
-            hits_b37 <- findOverlaps(gr, known_snps_b37)
-            hits_b38 <- findOverlaps(gr, known_snps_b38)
-            if (
-              anyDuplicated(queryHits(hits_b37)) || 
-              anyDuplicated(queryHits(hits_b38))
-            ) {
-              warning("some SNPs are mapped to more than 1 known SNP")
-            }
-            if (length(hits_b37) > length(hits_b38)) {
-              message(
-                paste0(
-                  "Managed to map ", 
-                  length(hits_b37), 
-                  "rsIDs to 50k variants with GRCh37 compared to ", 
-                  length(hits_b38), 
-                  " for GRCh38. Proceeding with GRCh37."
-                )
-              )
-              return("GRCh37")
-            } else if (length(hits_b38) > length(hits_b37)) {
-              message(
-                paste0(
-                  "Managed to map ", 
-                  length(hits_b38), 
-                  " rsIDs to 50k variants with GRCh38 compared to ", 
-                  length(hits_b37), 
-                  " for GRCh37. Proceeding with GRCh38."
-                )
-              )
-              return("GRCh38") 
-            } else {
-              stop("Could not determine genome build and impute rsIDs!")
-            }
-        }
-    )
-    file_genome_build <- tolower(file_genome_build)
-    writeLines(
-        file_genome_build,
-        "genome_build", 
-        sep = ""
-    )
+    get_genome_build.R \
+        --pheno $phenotype_name \
+        --file $raw_sumstat_file \
+        --col_headers $custom_col_headers \
+        --lib $snplocs_lib \
+        --cores $task.cpus \
     """
 
     stub:
@@ -122,12 +39,6 @@ process FORMAT_SUMSTATS {
     tag "$phenotype_name, $genome_build"
     label 'rProcess'
     conda 'conda_envs/r.yml'
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch{37,38}_log_msg.txt" ,
-	saveAs: { _fn -> "munge_sumstats_log.txt" }
-    )
 
     input:
     tuple val(phenotype_name),
@@ -136,139 +47,29 @@ process FORMAT_SUMSTATS {
         path(raw_sumstat_file), 
         path(custom_col_headers),
         path(snplocs_lib),
-	path(log_pvalue_column_names_file)
+	    path(log_pvalue_column_names_file)
 
     output:
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
-        path("formatted_sumstats_${genome_build}.vcf"),
-        path("formatted_sumstats_${genome_build}_log_msg.txt")
+        path("formatted_sumstats.vcf"), emit: files
+    tuple val(phenotype_name), path("formatted_sumstats_log_msg.txt"), emit: log
 
     script:
     """
-    #! /usr/bin/env Rscript --vanilla
-    
-    # SETUP ----
-    suppressPackageStartupMessages(library("MungeSumstats"))
-    suppressPackageStartupMessages(library("GenomicFiles"))
-    suppressPackageStartupMessages(library("VariantAnnotation"))
-    suppressPackageStartupMessages(library("GenomeInfoDb"))
-    suppressPackageStartupMessages(library("data.table"))
-
-    # INPUT VARIABLES ----
-    phenotype_name <- "$phenotype_name"
-    genome_build <- trimws("$genome_build")
-    stopifnot(genome_build %in% c("grch37", "grch38"))
-
-    raw_sumstat_file <- "$raw_sumstat_file"
-    formatted_sumstats_file <- paste0(
-        "formatted_sumstats_", 
-        genome_build,
-        ".vcf.bgz"
-    )
-    custom_sumstatsColHeaders <- "$custom_col_headers"
-    custom_sumstatsColHeaders <- fread(custom_sumstatsColHeaders)
-    setDF(custom_sumstatsColHeaders)
-
-    snplocs_lib <- "$snplocs_lib"
-    .libPaths(c(.libPaths(), snplocs_lib))
-
-    log_pvalue_column_names_file <- "$log_pvalue_column_names_file"
-    log_pvalue_column_names <- fread(log_pvalue_column_names_file)\$col_names
-
-    # FORMATTING ----
-    sumstats <- MungeSumstats::format_sumstats(
-        path = raw_sumstat_file,
-        save_path = formatted_sumstats_file,
-        write_vcf = TRUE,
-        
-        rmv_chr = c("Y", "MT"), 
-        chr_style = "UCSC",
-        
-        return_data = TRUE, 
-        return_format = 'vranges',
-        
-        tabix_index = FALSE,
-        INFO_filter = 0.8,
-        sort_coordinates = TRUE,
-        impute_beta = TRUE,
-        impute_se = TRUE,
-        ignore_multi_trait = TRUE,
-	convert_small_p = FALSE,
-        
-        indels = TRUE,
-        drop_indels = FALSE,
-        
-        bi_allelic_filter = FALSE,
-        flip_frq_as_biallelic = TRUE,
-        
-        ref_genome = ifelse(genome_build == "grch37", "GRCh37", "GRCh38"), 
-        on_ref_genome = TRUE, 
-        convert_ref_genome = NULL,
-        
-        mapping_file = custom_sumstatsColHeaders, 
-        nThread = 20,
-        log_folder = "./",
-        log_mungesumstats_msgs = TRUE,
-        imputation_ind = TRUE,
-        log_folder_ind = FALSE,
-        force_new = TRUE
-    )
-    
-    # Output is saved in list when logging is active!
-    sumstats <- sumstats\$sumstats
-    
-    # Remove all column names that are not expected in a GWAS-VCF
-    canonical_colnames <- c(unique(custom_sumstatsColHeaders\$Corrected), log_pvalue_column_names)
-    non_canonical_colnames <- setdiff(
-      names(elementMetadata(sumstats)),
-      canonical_colnames
-    )
-    if (length(non_canonical_colnames) > 0) {
-      for (i in non_canonical_colnames)
-          elementMetadata(sumstats)[[i]] <- NULL
-    }
-
-    # Rename existing Log10P column or create it
-    format_cols <- names(mcols(sumstats))
-    lp_old <- format_cols[format_cols %in% log_pvalue_column_names]
-    lp_new <- "LOG10P"
-    names(lp_new) <- lp_old
-
-    # TODO: In case this is >1, Not sure what to expect or to do
-    if (length(lp_old) == 1) {
-      mcols(sumstats) <- rename(mcols(sumstats), lp_new)
-      
-      # Make sure the column is positive (converting log10P to -log10P
-      mcols(munged_data)[[lp_new]] <- abs(mcols(munged_data)[[lp_new]])
-
-    } else {
-      new_lp_col <- list("LOG10P" = -log10(mcols(sumstats)\$P))
-      mcols(sumstats) <- cbind(
-        mcols(sumstats),
-        new_lp_col
-        )
-    }
-
-    # CLEANUP ----
-    # This is annoying but there's no way around it.
-    file.remove(formatted_sumstats_file)
-
-    # Save with the correct chromosome coding
-    GenomeInfoDb::seqlevelsStyle(sumstats) <- "UCSC"
-
-    # SAVE ----
-    VariantAnnotation::writeVcf(
-        sumstats, 
-        paste0("formatted_sumstats_", genome_build, ".vcf")
-    )
+    format_sumstats.R --pheno $phenotype_name \
+        --build $genome_build \
+        --file $raw_sumstat_file \
+        --col_headers $custom_col_headers \
+        --lib $snplocs_lib \
+        --logp_names $log_pvalue_column_names_file
     """
 
     stub:
     """
-    touch "formatted_sumstats_${genome_build}.vcf"
-    touch "formatted_sumstats_${genome_build}_log_msg.txt"
+    touch "formatted_sumstats.vcf"
+    touch "formatted_sumstats_log_msg.txt"
     """
 
 }
@@ -318,22 +119,6 @@ process NO_LIFTOVER_SUMSTATS {
     cache 'lenient'
     tag "$phenotype_name:$genome_build"
     conda 'conda_envs/bcftools_liftover.yml'
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}",
-        saveAs: { fn -> "grch37/${fn}"
-        },
-        enabled: params.publish_grch37 & params.publish_vcf
-    )
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}",
-        saveAs: { fn -> "grch38/${fn}"
-        },
-        enabled: params.publish_grch38 & params.publish_vcf
-    )
 
     input:
     tuple val(phenotype_name),
@@ -344,8 +129,7 @@ process NO_LIFTOVER_SUMSTATS {
     output:
     tuple val(phenotype_name),
         val(genome_build),
-        path("formatted_sumstats_${genome_build}.vcf.gz"),
-        path("formatted_sumstats_${genome_build}.vcf.gz.tbi")
+        path("formatted_sumstats.vcf.gz")
 
     script:
     """
@@ -363,14 +147,10 @@ process NO_LIFTOVER_SUMSTATS {
         bcftools  sort -Ou | \
         bcftools  norm --no-version -Ou -m- | \
         bcftools annotate -x INFO -Oz -o \$OUTPUT_VCF
-
-    # create index
-    bcftools index -f --tbi \$OUTPUT_VCF
     """
     stub:
     """
-    touch "formatted_sumstats_${genome_build}.vcf.gz"
-    touch "formatted_sumstats_${genome_build}.vcf.gz.tbi"
+    touch "formatted_sumstats.vcf.gz"
     """
 }
 
@@ -380,47 +160,28 @@ process LIFTOVER_SUMSTATS {
     cache 'lenient'
     tag "$phenotype_name:$genome_build->$other_genome_build"
     conda 'conda_envs/bcftools_liftover.yml'
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch37.vcf{.gz,.gz.tbi}",
-        saveAs: { fn -> "grch37/${fn}"
-        },
-        enabled: params.publish_grch37 & params.publish_vcf
-    )
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch38.vcf{.gz,.gz.tbi}",
-        saveAs: { fn -> "grch38/${fn}"
-        },
-        enabled: params.publish_grch38 & params.publish_vcf
-    )
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/logs" },
-        mode: 'copy',
-        pattern: "liftover_log.txt"
-    ) 
 
     input:
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
         path(formatted_sumstats),
-        path(munging_log),
         path(hg19_reference),
         path(hg38_reference),
         path(hg19_to_38_chain_file),
         path(hg38_to_19_chain_file)
+    
     output:
     tuple val(phenotype_name),
         val(genome_build),
         val(other_genome_build),
         path("formatted_sumstats_grch37.vcf.gz"),
-        path("formatted_sumstats_grch37.vcf.gz.tbi"),
-        path("formatted_sumstats_grch38.vcf.gz"),
-        path("formatted_sumstats_grch38.vcf.gz.tbi"),
-        path("liftover_log.txt")
+        path("formatted_sumstats_grch38.vcf.gz"), 
+        emit: files
+    tuple val(phenotype_name), 
+        path("liftover_log.txt"),
+        path("reject.vcf.bgz"),
+        emit: log
 
     script:
     """
@@ -438,6 +199,8 @@ process LIFTOVER_SUMSTATS {
     touch liftover_log.txt
     LOG='liftover_log.txt'
 
+    echo "Liftover direction: \${FROM_GENOME_BUILD} -> \${TO_GENOME_BUILD}" >> \$LOG 2>&1
+
     # SORT & BGZIP INPUT ---- 
 
     # Small pvalues will underflow to 0 since float are 32bit
@@ -453,6 +216,9 @@ process LIFTOVER_SUMSTATS {
     # BGZip the file
     bgzip \$INPUT_VCF
     INPUT_VCF="\${INPUT_VCF}.gz"
+    INPUT_VCF_NAMED="formatted_sumstats_\${FROM_GENOME_BUILD}.vcf.gz"
+    mv \$INPUT_VCF \$INPUT_VCF_NAMED
+    INPUT_VCF="\${INPUT_VCF_NAMED}"
 
     # LIFTOVER DIRECTION ----
 
@@ -520,139 +286,114 @@ process LIFTOVER_SUMSTATS {
     rm output.vcf.gz
     rm output_COLLAPSED.vcf.gz
     rm input_COLLAPSED.vcf.gz
-
-    # create index
-    bcftools index -f --tbi \$INPUT_VCF
-    bcftools index -f --tbi \$OUTPUT_VCF
     """
     
     stub:
     """
     touch "formatted_sumstats_grch37.vcf.gz"
-    touch "formatted_sumstats_grch37.vcf.gz.tbi"
     touch "formatted_sumstats_grch38.vcf.gz"
-    touch "formatted_sumstats_grch38.vcf.gz.tbi"
     touch "liftover_log.txt"
+    touch "reject.vcf.bgz"
     """
 
 }
 
 // To make downstream processing easier, save as tabular parquet
-process SAVE_PARQUET {
+process CREATE_PARQUET {
 
     cache 'lenient'
     tag "$phenotype_name"
     label 'rProcess'
     conda 'conda_envs/r.yml'
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch37.parquet",
-        saveAs: { fn -> "grch37/${fn}"
-        },
-        enabled: params.publish_grch37 & params.publish_parquet
-    )
-    publishDir (
-        path: { "${params.outDir}/formatted/${phenotype_name}/" },
-        mode: 'copy',
-        pattern: "formatted_sumstats_grch38.parquet",
-        saveAs: { fn -> "grch38/${fn}"
-        },
-        enabled: params.publish_grch38 & params.publish_parquet
-    )
+
+    input:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path(formatted_sumstats)
+
+    output:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path("formatted_sumstats.parquet")
+
+
+    script:
+    """
+    create_parquet_from_vcf.R $formatted_sumstats
+    """
+
+    stub:
+    """
+    touch formatted_sumstats.parquet
+    """
+
+}
+
+process CHECK_PARQUET {
+
+    cache 'lenient'
+    tag "$phenotype_name"
+    label 'rProcess'
+    conda 'conda_envs/r.yml'
 
     input:
     tuple val(phenotype_name),
         val(genome_build),
         path(formatted_sumstats),
-        path(formatted_sumstats_index)
+        path(snplocs_lib)
+
 
     output:
-    tuple val(phenotype_name),
-        path("formatted_sumstats_${genome_build}.parquet")
-
+    tuple val(phenotype_name), 
+        val(genome_build), 
+        path("formatted_sumstats.parquet"),
+        emit: parquet
+    tuple val(phenotype_name), path("rejected_sumstats.parquet"), 
+        optional: true,
+        emit: rejected
 
     script:
     """
-    #! /usr/bin/env Rscript --vanilla
-
-    # SETUP ----
-
-    suppressPackageStartupMessages(library("data.table"))
-    suppressPackageStartupMessages(library("arrow"))
-    suppressPackageStartupMessages(library("VariantAnnotation"))
-    suppressPackageStartupMessages(library("fs"))
-
-    # INPUT ----
-
-    sumstats_file <- "$formatted_sumstats"
-
-    # CONVERT & ANNOTATE ----
-
-    parquet_file_name <- fs::path_ext_set(
-      fs::path_ext_remove(
-        fs::path_ext_remove(
-          fs::path_file(
-            sumstats_file
-          )
-        )
-      ), "parquet"
-    )
-    
-    sumstats <- VariantAnnotation::readVcf(sumstats_file)
-    sumstats <- MungeSumstats:::vcf2df(
-      sumstats, 
-      add_sample_names = FALSE, 
-      add_rowranges = FALSE
-    )
-    id_split <- tstrsplit(sumstats\$ID, r"{:|_|/}")
-    sumstats\$ID <- NULL
-    sumstats[, `:=`(
-      CHR_UCSC = id_split[[1]],
-      CHR_ENSEMBL = gsub("^chr", "", id_split[[1]]),
-      A1 = id_split[[3]],
-      A2 = id_split[[4]],
-      BP = id_split[[2]]
-    )]
-    sumstats[, `:=`(
-      ID_UCSC = paste0(
-        CHR_UCSC,
-        ":",
-        BP,
-        "_",
-        pmin(id_split[[3]], id_split[[4]]), 
-        "_",
-        pmax(id_split[[3]], id_split[[4]])
-      ),
-      ID_ENSEMBL = paste0(
-        CHR_ENSEMBL, 
-        ":",
-        BP,
-        "_",
-        pmin(id_split[[3]], id_split[[4]]),
-        "_",
-        pmax(id_split[[3]], id_split[[4]])
-      )
-    )]
-    id_cols <- c(
-      "CHR_UCSC", "CHR_ENSEMBL", "BP", "END", "A1",
-      "A2", "ID_UCSC", "ID_ENSEMBL", "SNP"
-    )
-    id_cols <- intersect(id_cols, names(sumstats))
-    remaining_cols <- setdiff(names(sumstats), id_cols)
-    data.table::setcolorder(sumstats, c(id_cols, remaining_cols))  
-    arrow::write_parquet(
-        sumstats,
-        parquet_file_name, 
-      )
-    # REFERENCE ----
-
-    # https://github.com/Bioconductor/VariantAnnotation/issues/57
+    check_parquet.R $formatted_sumstats $snplocs_lib
     """
 
     stub:
     """
-    touch formatted_sumstats_${genome_build}.parquet
+    touch formatted_sumstats.parquet
+    touch rejected_sumstats.parquet
+
     """
+}
+
+process SAVE_VCF {
+    cache 'lenient'
+    tag "$phenotype_name"
+    label 'rProcess'
+    conda 'conda_envs/r.yml'
+    
+    input:
+    tuple val(phenotype_name),
+        val(genome_build),
+        path(formatted_sumstats),
+        path(snplocs_lib)
+
+    output:
+    tuple val(phenotype_name), 
+        val(genome_build), 
+        path("formatted_sumstats.vcf.bgz"),
+        path("formatted_sumstats.vcf.bgz.tbi")
+
+
+    script:
+    """
+    write_vcf.R $formatted_sumstats $snplocs_lib
+    """
+
+    stub:
+    """
+    touch formatted_sumstats.vcf.bgz
+    touch formatted_sumstats.vcf.bgz.tbi
+    """
+
 
 }

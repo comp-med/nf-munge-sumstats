@@ -4,11 +4,16 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
+  - cmake
+  - make
+  - rust
   - r-base
   - r-fs
   - r-data.table
+  - r-glue
   - r-r.utils
   - r-arrow
+  - r-optparse
   - bioconductor-mungesumstats
   - bioconductor-variantannotation
   - bioconductor-genomeinfodb

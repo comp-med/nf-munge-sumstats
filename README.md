@@ -44,7 +44,8 @@ configured in `nextflow.config`.
     * [`bcftools`](https://samtools.github.io/bcftools/bcftools.html) with the [`liftover`](https://github.com/freeseek/score/?tab=readme-ov-file#liftover-vcfs) plugin installed
 * R packages: 
     * From GitHub: [MungeSumstats](https://github.com/Al-Murphy/MungeSumstats)
-    * From CRAN: `data.table`, `fs`, `arrow`
+    * From CRAN: `data.table`, `fs`, `arrow`, `glue`
+    * From R-Multiverse: `polars`
     * From Bioconductor: `GenomicFiles`, `GenomicRanges`, `VariantAnnotation`,
       `GenomeInfoDb`, `SNPlocs.Hsapiens.dbSNP155.GRCh37`, 
       `SNPlocs.Hsapiens.dbSNP155.GRCh38`
@@ -65,15 +66,15 @@ First, see if the the pipeline executes by starting a dry-run.
 # When running the pipeline locally, e.g. on your laptop
 nextflow run main.nf -stub-run 
 
-# When on a HPC with SLURM, use the `cluster` profile
-nextflow run main.nf -stub-run -profile cluster
+# When on a HPC with SLURM, use the `hpc` profile
+nextflow run main.nf -stub-run -profile hpc
 ```
 
 If that finished successfully, run the actual pipeline.
 
 ```bash
-# Again, when on an HPC with SLURM, add the `-profile cluster` flag
-nextflow run main.nf -profile cluster
+# Again, when on an HPC with SLURM, add the `-profile hpc` flag
+nextflow run main.nf -profile hpc
 ```
 
 ### Output
@@ -120,15 +121,12 @@ to manually adjust the code in this step to make it run successfully.
 * Make process to ID metal format to manually rename columns
 * Try to find a way around statistics missing RSIDs as those are required when
   inferring the genome build
-* Retain liftover and munging logs
 * Logging
 * Make more setting for `MungeSumstats` user-facing
-* Externalize the currently internal proxy settings
 * Look for `TODO`s in the code!
 * Make propagating meta data more ergonomic
 * Add support for downloading files from Zenodo (& GBMI?)
 * More fine-grained resource allocation
 * Add nf-test
 * Add support for more reporting
-* Add help text to command
 * Create nice output table with with phenotype & path
