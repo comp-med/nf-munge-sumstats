@@ -67,15 +67,15 @@ workflow MUNGE_SUMSTATS {
     } else if (params.publish_grch38 == false)  {
         formatted_files_ch = formatted_files_ch.branch {
             tup -> 
-                liftover: tup[1] == "grch38" 
-                no_liftover: tup[1] == "grch37" 
+                liftover: tup[1] == "grch38"
+                no_liftover: tup[1] == "grch37"
         }
 
     // when both formats are selected, liftover everything
     } else {
         formatted_files_ch = formatted_files_ch.branch {
             _tup -> 
-                liftover: true 
+                liftover: true
                 no_liftover: false 
         }
     }
@@ -107,32 +107,41 @@ workflow MUNGE_SUMSTATS {
           [phenotype_name, "grch37", grch37_vcf], 
           [phenotype_name, "grch38", grch38_vcf] 
         ]
+    }
+
+    // remove files I do not want to publish
+    if (params.publish_grch37 == false) {
+        liftover_ch = liftover_ch.filter {
+            t -> t[1] != "grch37"
         }
+    } else if (params.publish_grch38 == false) {
+        liftover_ch = liftover_ch.filter {
+            t -> t[1] != "grch38"
+        }
+    }
 
     // some bcftools checks
     no_liftover_ch = NO_LIFTOVER_SUMSTATS(
-        formatted_files_ch.no_liftover
+        formatted_files_ch.no_liftover.combine(liftover_files_ch)
     )
 
+    liftover_log_ch = LIFTOVER_SUMSTATS.out.log.concat(no_liftover_ch.log)
+
     // combine the channels again
-    liftover_ch = liftover_ch.concat(no_liftover_ch)
+    liftover_ch = liftover_ch.concat(no_liftover_ch.files)
     
     // Having the files available in a tabular format makes it more convenient
     // Therefore, saving everything in parquet makes sense
     CREATE_PARQUET (liftover_ch)
-    CHECK_PARQUET ( CREATE_PARQUET.out.combine(snplocs_lib)
-    )
-    
-    if (params.publish_vcf == true) {
-        SAVE_VCF( CHECK_PARQUET.out.parquet.combine(snplocs_lib) )
-
-    }
+    CHECK_PARQUET ( CREATE_PARQUET.out.combine(snplocs_lib) )
+    SAVE_VCF( CHECK_PARQUET.out.parquet.combine(snplocs_lib) )
 
     emit:
     parquet = CHECK_PARQUET.out.parquet
-    rejected = CHECK_PARQUET.out.rejected
+    check_rejected = CHECK_PARQUET.out.rejected
     vcf = SAVE_VCF.out
     format_log = FORMAT_SUMSTATS.out.log
-    liftover_log = LIFTOVER_SUMSTATS.out.log
+    liftover_log = liftover_log_ch
+    liftover_rejected = LIFTOVER_SUMSTATS.out.reject
 
 }

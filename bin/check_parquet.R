@@ -248,4 +248,4 @@ if (rows_removed != 0) {
 # SAVE PARQUET ----
 
 message("Writing out new `.parquet` object")
-sumstat$write_parquet(parquet_file)
+sumstat$write_parquet("checked_sumstats.parquet")

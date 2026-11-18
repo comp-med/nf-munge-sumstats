@@ -125,32 +125,35 @@ process NO_LIFTOVER_SUMSTATS {
         val(genome_build),
         val(other_genome_build),
         path(formatted_sumstats),
-        path(munging_log)
+        path(hg19_reference),
+        path(hg38_reference),
+        path(_hg19_to_38_chain_file),
+        path(_hg38_to_19_chain_file)
+
     output:
     tuple val(phenotype_name),
         val(genome_build),
-        path("formatted_sumstats.vcf.gz")
+        path("formatted_sumstats_${genome_build}.vcf.gz"),
+        emit: files
+    tuple val(phenotype_name), 
+        path("no_liftover_log.txt"),
+        emit: log
 
     script:
+    if (!(genome_build in ['grch37', 'grch38']))
+    error "Unknown genome_build: ${genome_build}"
+    def forward = genome_build == 'grch37'
+    def src_ref = forward ? hg19_reference : hg38_reference
     """
-    INPUT_VCF="$formatted_sumstats"
-    OUTPUT_VCF="\${INPUT_VCF}.gz"
-
-    # Small pvalues will underflow to 0 since float are 32bit
-    # Saving them as String retains the value
-    bcftools view -h "\$INPUT_VCF" | \
-        sed -E '/^##FORMAT=<ID=P,/ s/Type=Float/Type=String/' > \
-        new_header.txt
-
-    # Re-header, sort, expand, index and save
-    bcftools reheader -h new_header.txt "\$INPUT_VCF" | \
-        bcftools  sort -Ou | \
-        bcftools  norm --no-version -Ou -m- | \
-        bcftools annotate -x INFO -Oz -o \$OUTPUT_VCF
+    no_liftover.sh \
+        --input   ${formatted_sumstats} \
+        --from    ${genome_build} \
+        --src-ref ${src_ref}
     """
     stub:
     """
-    touch "formatted_sumstats.vcf.gz"
+    touch "formatted_sumstats_{$genome_build}.vcf.gz"
+    touch "no_liftover.log"
     """
 }
 
@@ -180,112 +183,26 @@ process LIFTOVER_SUMSTATS {
         emit: files
     tuple val(phenotype_name), 
         path("liftover_log.txt"),
-        path("reject.vcf.bgz"),
         emit: log
+    tuple val(phenotype_name), 
+        path("reject.vcf.bgz"),
+        emit: reject
 
     script:
+    if (!(genome_build in ['grch37', 'grch38']))
+    error "Unknown genome_build: ${genome_build}"
+    def forward = genome_build == 'grch37'
+    def chain   = forward ? hg19_to_38_chain_file : hg38_to_19_chain_file
+    def src_ref = forward ? hg19_reference        : hg38_reference
+    def tgt_ref = forward ? hg38_reference        : hg19_reference
     """
-    # INPUT FILES ----
-    HG19_REF="$hg19_reference"
-    HG38_REF="$hg38_reference"
-    HG19_TO_HG38_CHAIN="$hg19_to_38_chain_file"
-    HG38_TO_HG19_CHAIN="$hg38_to_19_chain_file"
-    FROM_GENOME_BUILD="$genome_build"
-    TO_GENOME_BUILD="$other_genome_build"
-    INPUT_VCF="$formatted_sumstats"
-    OUTPUT_VCF="formatted_sumstats_\${TO_GENOME_BUILD}.vcf.gz"
-
-    # LOG FILE ----
-    touch liftover_log.txt
-    LOG='liftover_log.txt'
-
-    echo "Liftover direction: \${FROM_GENOME_BUILD} -> \${TO_GENOME_BUILD}" >> \$LOG 2>&1
-
-    # SORT & BGZIP INPUT ---- 
-
-    # Small pvalues will underflow to 0 since float are 32bit
-    # Saving them as String retains the value
-    bcftools view -h "\$INPUT_VCF" | \
-        sed -E '/^##FORMAT=<ID=P,/ s/Type=Float/Type=String/' > \
-        new_header.txt
-
-    # Re-header, sort, expand, index and save
-    bcftools reheader -h new_header.txt "\$INPUT_VCF" | \
-        bcftools sort -o \$INPUT_VCF >> \$LOG 2>&1
-
-    # BGZip the file
-    bgzip \$INPUT_VCF
-    INPUT_VCF="\${INPUT_VCF}.gz"
-    INPUT_VCF_NAMED="formatted_sumstats_\${FROM_GENOME_BUILD}.vcf.gz"
-    mv \$INPUT_VCF \$INPUT_VCF_NAMED
-    INPUT_VCF="\${INPUT_VCF_NAMED}"
-
-    # LIFTOVER DIRECTION ----
-
-    if [ "\$FROM_GENOME_BUILD" == "grch37" ]; then
-        CHAIN=\$HG19_TO_HG38_CHAIN
-        SOURCE_REF=\$HG19_REF
-        TARGET_REF=\$HG38_REF
-    else
-        CHAIN=\$HG38_TO_HG19_CHAIN
-        SOURCE_REF=\$HG38_REF
-        TARGET_REF=\$HG19_REF    
-    fi
-
-    # COLLAPSE VCF ----
-
-    # Create a collapsed VCF and check REF/ALT alignment in the process
-    bcftools norm --no-version -Ou -m+ \$INPUT_VCF \
-        --check-ref ws \
-        -f \$SOURCE_REF \
-        -o input_COLLAPSED.vcf.gz \
-        >> \$LOG 2>&1
-
-    # FIX VCF REF ----
-
-    # Check Allele mismatches etc
-    bcftools +fixref input_COLLAPSED.vcf.gz -- -f \$SOURCE_REF \
-        >> \$LOG 2>&1
-
-    # LIFTOVER ----
-
-    # Liftover
-    bcftools +liftover --no-version input_COLLAPSED.vcf.gz -Ou -o output_COLLAPSED.vcf.gz -- \
-        -s \$SOURCE_REF \
-        -f \$TARGET_REF \
-        -c \$CHAIN  \
-        --reject reject.vcf.bgz \
-        --reject-type z \
-        --write-src \
-        >> \$LOG 2>&1
-
-    # CHECKS ----
-
-    # Check the file using bcftools
-    bcftools +af-dist output_COLLAPSED.vcf.gz \
-        >> \$LOG 2>&1
-
-    bcftools +fixref output_COLLAPSED.vcf.gz -- -f \$TARGET_REF \
-        >> \$LOG 2>&1
-
-    bcftools stats output_COLLAPSED.vcf.gz \
-        >> \$LOG 2>&1
-
-    # Sort, expand, index and save
-    bcftools  sort -Oz output_COLLAPSED.vcf.gz | \
-        bcftools  norm --no-version -Oz -m- -o output.vcf.gz \
-        >> \$LOG 2>&1
-
-    # INFO Column of output file contains content that his difficult
-    # to parse downstream. I'll remove it
-    bcftools annotate -x INFO output.vcf.gz -Oz -o \$OUTPUT_VCF \
-        >> \$LOG 2>&1
-
-    # This is because bcftools does not modify in-place, apparently.
-    # Clean up
-    rm output.vcf.gz
-    rm output_COLLAPSED.vcf.gz
-    rm input_COLLAPSED.vcf.gz
+    liftover.sh \
+        --input   ${formatted_sumstats} \
+        --from    ${genome_build} \
+        --to      ${other_genome_build} \
+        --src-ref ${src_ref} \
+        --tgt-ref ${tgt_ref} \
+        --chain   ${chain}
     """
     
     stub:
@@ -346,7 +263,7 @@ process CHECK_PARQUET {
     output:
     tuple val(phenotype_name), 
         val(genome_build), 
-        path("formatted_sumstats.parquet"),
+        path("checked_sumstats.parquet"),
         emit: parquet
     tuple val(phenotype_name), path("rejected_sumstats.parquet"), 
         optional: true,
@@ -359,7 +276,7 @@ process CHECK_PARQUET {
 
     stub:
     """
-    touch formatted_sumstats.parquet
+    touch checked_sumstats.parquet
     touch rejected_sumstats.parquet
 
     """

@@ -117,10 +117,11 @@ workflow {
   
   publish:
     parquet = MUNGE_SUMSTATS.out.parquet
-    rejected = MUNGE_SUMSTATS.out.rejected
+    check_rejected = MUNGE_SUMSTATS.out.check_rejected
     vcf = MUNGE_SUMSTATS.out.vcf
     format_log = MUNGE_SUMSTATS.out.format_log
     liftover_log = MUNGE_SUMSTATS.out.liftover_log
+    liftover_rejected = MUNGE_SUMSTATS.out.liftover_rejected
 
 }
 
@@ -128,45 +129,43 @@ workflow {
 
 output {
       parquet {
-        enabled params.publish_parquet
         path { pheno, build, file -> 
-        [ (file): "formatted/${pheno}/${build}/" ] 
+        [ (file): "formatted/${pheno}/${build}/formatted_sumstats.parquet" ] 
         }
+        enabled params.publish_parquet
         mode 'copy'
     }
     vcf {
-        enabled params.publish_vcf
         path { pheno, build, file, index -> [
            (file): "formatted/${pheno}/${build}/",
            (index): "formatted/${pheno}/${build}/" 
            ] }
+        enabled params.publish_vcf
         mode 'copy'
     }
     format_log {
         path { pheno, file -> [
-          (file): "formatted/${pheno}/logs/"
+          (file): "formatted/${pheno}/logs/formatting_log.txt"
         ] }
         mode 'copy'
     }
     liftover_log {
-        path { pheno, file, rejected -> [
+        path { pheno, file -> [
           (file): "formatted/${pheno}/logs/",
-          (rejected): "formatted/${pheno}/rejected/"
-
         ] }
         mode 'copy'
     }
-    rejected {
+    liftover_rejected {
         path { pheno, file -> [
-          (file): "formatted/${pheno}/rejected/"
+          (file): "formatted/${pheno}/rejected/liftover_rejected.vcf.bgz"
+        ] }
+        mode 'copy'
+    }
+    check_rejected {
+        path { pheno, file -> [
+          (file): "formatted/${pheno}/rejected/check_rejected.parquet"
         ] }
         mode 'copy'
     }
 
 }
-
-
-
-    
-    //format_logs = formatted_files_log_ch.out
-    //liftover_logs = liftover_log_ch.out
