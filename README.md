@@ -33,11 +33,24 @@ and the file containing the data must be named `raw_sumstat_file`, with a file
 extension, e.g. `.gz`, `.vcf`. Based on the default output of the downloading
 pipeline, the `input` parameter should point to the `raw/` directory.
 
+### Input Data: Raw Data  
+
+- Columns are standardized with `MungeSumstats` by mapping them from a table
+  listing possible names and their standardized meaning, so the raw data column
+  headers cannot be too obscure. The user can always create a manual mapping and
+  modify the respective table under `assets/`
+- To determine the genome build, a column containing some rsIDs needs to be
+  present. If your data does not have this, you'll need to do this manually for
+  now.
+
 ### Software
 
-Currently, the pipeline does not automatically set up all required software and
-R packages so make sure you have the following software dependencies set up and
-configured in `nextflow.config`.
+The pipeline manages dependencies with conda in addition to some custom
+processes that download and install software requirements. Some step have
+extensive dependency requirements that need to be downladed (e.g. reference
+genomes, polars). This is fully automated with a working installation of conda
+or mamba or, highly recommended,
+[`micromamba`](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
 
 * External binaries
     * [`bgzip`](https://www.htslib.org/doc/bgzip.html)
@@ -124,9 +137,7 @@ to manually adjust the code in this step to make it run successfully.
 * Logging
 * Make more setting for `MungeSumstats` user-facing
 * Look for `TODO`s in the code!
-* Make propagating meta data more ergonomic
 * Add support for downloading files from Zenodo (& GBMI?)
 * More fine-grained resource allocation
 * Add nf-test
 * Add support for more reporting
-* Create nice output table with with phenotype & path
